@@ -1,0 +1,415 @@
+<!--
+     ============LICENSE_START=======================================================
+     MODEL LOADER SERVICE
+     ================================================================================
+     Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
+     ================================================================================
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+     
+     http://www.apache.org/licenses/LICENSE-2.0
+     
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+     ============LICENSE_END=========================================================
+   -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.openecomp.aai.model-loader</groupId>
+	<artifactId>model-loader</artifactId>
+	<version>1.1.0-SNAPSHOT</version>
+	<packaging>war</packaging>
+	
+	<properties>
+		<docker.location>${basedir}/target</docker.location>
+		<!-- Ecomp Version -->
+		<ecomp.version>1.0.0</ecomp.version>
+		<dependency.scope>provided</dependency.scope>
+		<checkstyle.config.location>google_checks.xml</checkstyle.config.location>
+		<maven.compiler.source>1.8</maven.compiler.source>
+    	<maven.compiler.target>1.8</maven.compiler.target>
+	       <sonar.language>java</sonar.language>
+	       <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+	       <sonar.surefire.reportsPath>${project.build.directory}/surefire-reports</sonar.surefire.reportsPath>
+	       <sonar.jacoco.reportPath>${project.build.directory}/coverage-reports/jacoco.exec</sonar.jacoco.reportPath>
+	       <sonar.jacoco.reportMissing.force.zero>false</sonar.jacoco.reportMissing.force.zero>
+	       <sonar.projectVersion>${project.version}</sonar.projectVersion>
+		<nexusproxy>https://nexus.onap.org</nexusproxy>
+	</properties>
+
+	<distributionManagement>
+		<repository>
+			<id>ecomp-releases</id>
+			<name>ECOMP Release Repository</name>
+			<url>${nexusproxy}/content/repositories/releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>ecomp-snapshots</id>
+			<name>ECOMP Snapshot Repository</name>
+			<url>${nexusproxy}/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<dependencies>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.10.19</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-module-junit4</artifactId>
+			<version>1.6.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-api-mockito</artifactId>
+			<version>1.6.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-module-javaagent</artifactId>
+			<version>1.6.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-module-junit4-rule-agent</artifactId>
+			<version>1.6.2</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- xjc dependencies -->
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.2.11</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.xml.bind</groupId>
+			<artifactId>jaxb-impl</artifactId>
+			<version>2.2.11</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.xml.bind</groupId>
+			<artifactId>jaxb-core</artifactId>
+			<version>2.2.11</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.xml.bind</groupId>
+			<artifactId>jaxb-xjc</artifactId>
+			<version>2.2.11</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.persistence</groupId>
+			<artifactId>org.eclipse.persistence.moxy</artifactId>
+			<version>2.6.2</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.jersey</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>1.18</version>
+		</dependency>
+		<!-- Common logging framework -->
+		<dependency>
+			<groupId>org.openecomp.aai.logging-service</groupId>
+			<artifactId>common-logging</artifactId>
+			<version>1.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openecomp.sdc</groupId>
+		    <artifactId>sdc-distribution-client</artifactId>
+		    <version>${ecomp.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20131018</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.eclipse.jetty</groupId>
+		    <artifactId>jetty-security</artifactId>
+		    <version>9.3.8.RC0</version>
+		</dependency>
+		
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>4.0.0.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>2.12.1</version>
+        </dependency>
+        
+	</dependencies>
+	
+	<!-- Plugins and repositories -->
+          <pluginRepositories>
+                <pluginRepository>
+                           <id>central</id>
+                          <url>http://repo1.maven.org/maven2</url>
+                   </pluginRepository>
+                  <pluginRepository>
+                          <id>EvoSuite</id>
+                        <name>EvoSuite Repository</name>
+                         <url>http://www.evosuite.org/m2</url>
+                  </pluginRepository>
+          </pluginRepositories>
+           <repositories>
+                   <repository>
+                          <id>central</id>
+                          <name>Maven 2 repository 2</name>
+                          <url>http://repo2.maven.org/maven2/</url>
+                  </repository>
+              <repository>
+                         <id>ecomp-releases</id>
+                          <name>ECOMP Release Repository</name>
+			  <url>${nexusproxy}/content/repositories/releases/</url>
+                  </repository>
+                  <repository>
+                         <id>ecomp-snapshots</id>
+                          <name>ECOMP Snapshot Repository</name>
+			  <url>${nexusproxy}/content/repositories/snapshots/</url>
+                  </repository>
+                  <repository>
+                         <id>ecomp-staging</id>
+                          <name>ECOMP Staging Repository</name>
+			  <url>${nexusproxy}/content/repositories/staging/</url>
+                  </repository>
+
+          </repositories>
+	
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.7</version>
+				<executions>
+					<execution>
+						<id>copy-docker-file</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>target</outputDirectory>
+							<overwrite>true</overwrite>
+							<resources>
+								<resource>
+									<directory>${basedir}/src/main/docker</directory>
+									<filtering>true</filtering>
+									<includes>
+										<include>**/*</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<version>0.4.11</version>
+				<configuration>		
+					<verbose>true</verbose>
+					<serverId>docker-hub</serverId>
+					<imageName>${project.artifactId}</imageName>
+					<dockerDirectory>${docker.location}</dockerDirectory>
+					<imageTags>
+						<imageTag>latest</imageTag>
+					</imageTags>
+					<forceTags>true</forceTags>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.5.1</version>
+				<executions>
+					<execution>
+						<id>copy-agent</id>
+						<phase>process-test-classes</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.powermock</groupId>
+									<artifactId>powermock-module-javaagent</artifactId>
+									<version>1.6.2</version>
+									<outputDirectory>${project.build.directory}/agents</outputDirectory>
+									<destFileName>powermock-javaagent.jar</destFileName>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.12.4</version>
+				<configuration>
+				   <argLine>-noverify ${argLine}</argLine>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>jaxb2-maven-plugin</artifactId>
+				<version>2.2</version>
+				<executions>
+					<execution>
+						<id>xjc</id>
+						<goals>
+							<goal>xjc</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<clearOutputDir>false</clearOutputDir>
+					<outputDirectory>${project.build.directory}/generated-sources</outputDirectory>
+					<sources>
+						<source>${project.basedir}/src/main/resources/schema</source>
+					</sources>
+					<addGeneratedAnnotation>true</addGeneratedAnnotation>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
+			</plugin>
+		
+			<!-- Checkstyle plugin - used to report on compliance with -->
+			<!-- the Google style guide. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>3.3</version>
+				<configuration>
+					<reportPlugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-checkstyle-plugin</artifactId>
+							<version>2.17</version>
+							<reportSets>
+								<reportSet>
+									<reports>
+										<report>checkstyle</report>
+									</reports>
+								</reportSet>
+							</reportSets>
+						</plugin>
+					</reportPlugins>
+				</configuration>
+			</plugin>
+                        
+            <!-- license plugin -->
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>license-maven-plugin</artifactId>
+              <version>1.10</version>
+              <configuration>
+                <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+                <excludes>
+                  <exclude>**.json</exclude>
+                  <exclude>**.properties</exclude>
+                </excludes>
+                <processStartTag>============LICENSE_START=======================================================</processStartTag>
+                <processEndTag>============LICENSE_END=========================================================</processEndTag>
+                <sectionDelimiter>================================================================================</sectionDelimiter>
+                <licenseName>apache_v2</licenseName>
+                <inceptionYear>2017</inceptionYear>
+                <organizationName>AT&amp;T Intellectual Property. All rights reserved.</organizationName>
+                <projectName>MODEL LOADER SERVICE</projectName>
+                <canUpdateCopyright>true</canUpdateCopyright>
+                <canUpdateDescription>true</canUpdateDescription>
+                <canUpdateLicense>true</canUpdateLicense>
+                <emptyLineAfterHeader>true</emptyLineAfterHeader>
+                <roots>
+                  <root>.</root>
+                </roots>
+                <excludes>
+                  <exclude>**/*.json</exclude>
+                </excludes>
+                <extraExtensions>
+                  <route>xml</route>
+                  <props>properties</props>
+                  <xsd>xml</xsd>
+                  <txt>java</txt>
+                </extraExtensions>
+              </configuration>
+              <executions>
+                <execution>
+                  <id>first</id>
+                  <goals>
+                    <goal>update-file-header</goal>
+                  </goals>
+                  <phase>process-sources</phase>
+                </execution>
+              </executions>
+            </plugin>
+             <plugin>
+             	<groupId>org.apache.maven.plugins</groupId>
+             	<artifactId>maven-deploy-plugin</artifactId>             	
+             	<configuration>
+             	<skip>true</skip>
+             	</configuration>
+             </plugin>
+	     <plugin>
+	      <groupId>org.codehaus.mojo</groupId>
+	      <artifactId>sonar-maven-plugin</artifactId>
+	      <version>3.2</version>
+	    </plugin>
+	    <plugin>
+	      <groupId>org.jacoco</groupId>
+	      <artifactId>jacoco-maven-plugin</artifactId>
+	      <version>0.7.7.201606060606</version>
+	      <configuration>
+		   <dumpOnExit>true</dumpOnExit>
+	      </configuration>
+	      <executions>
+		   <execution>
+		     <id>jacoco-initialize-unit-tests</id>
+		     <goals>
+			   <goal>prepare-agent</goal>
+		     </goals>
+		     <configuration>
+			   <destFile>${project.build.directory}/coverage-reports/jacoco.exec</destFile>
+			   <!-- <append>true</append> -->
+		     </configuration>
+		   </execution>
+	      </executions>
+	    </plugin>
+	    <plugin>
+	    	<groupId>org.sonatype.plugins</groupId>
+	    	<artifactId>nexus-staging-maven-plugin</artifactId>
+	    	<version>1.6.7</version>
+	    	<extensions>true</extensions>
+	    	<configuration>
+	    		<nexusUrl>${nexusproxy}</nexusUrl>
+	    		<stagingProfileId>176c31dfe190a</stagingProfileId>
+	    		<serverId>ecomp-staging</serverId>
+	    	</configuration>
+	    </plugin>
+
+		</plugins>		
+	</build>
+	
+	
+</project>

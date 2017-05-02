@@ -15,10 +15,10 @@ docker run -d --net=host --name="hbase-1.2.3" aaidocker/aai-hbase-1.2.3
 # Wait 3 minutes before instantiating the A&AI container
 sleep 180
 
-cd /opt/src
-
-git clone https://git.onap.org/aai/aai-service
-pushd aai-service
+if [ -d /opt/aai/src/aai-service ]; then
+  git clone https://git.onap.org/aai/aai-service /opt/aai/src/aai-service
+fi
+pushd /opt/aai/src/aai-service
 mvn -N -P runAjsc
 popd
 
@@ -26,30 +26,37 @@ docker pull $NEXUS_DOCKER_REPO/openecomp/ajsc-aai:$DOCKER_IMAGE_VERSION
 docker rm -f aai-service
 docker run --name=aai-service --net=host -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt -it -e AAI_REPO_PATH=r/aai -e AAI_CHEF_ENV=simpledemo -d -e AAI_CHEF_LOC=/var/chef/aai-data/environments -e docker_gitbranch=master $NEXUS_DOCKER_REPO/openecomp/ajsc-aai:$DOCKER_IMAGE_VERSION
 
-git clone https://git.onap.org/aai/logging-service
-pushd logging-service
+if [ ! -d /opt/common/src/logging-service ]; then
+  git clone https://git.onap.org/aai/logging-service /opt/common/src/logging-service
+fi
+pushd /opt/common/src/logging-service
 mvn install
 popd
 
-git clone https://git.onap.org/sdc/sdc-distribution-client
-pushd sdc-distribution-client
+if [ ! -d /opt/sdc/src/sdc-distribution-client ]; then
+  git clone https://git.onap.org/sdc/sdc-distribution-client /opt/sdc/src/sdc-distribution-client
+fi
+pushd /opt/sdc/src/sdc-distribution-client
 mvn install 
 popd 
 
-git clone https://git.onap.org/aai/model-loader
-pushd model-loader
+if [ ! -d /opt/aai/src/model-loader ]; then
+  git clone https://git.onap.org/aai/model-loader /opt/aai/src/model-loader
+fi
+pushd /opt/aai/src/model-loader
+cp /opt/files/model-loader.pom.xml ./pom.xml
 mvn clean package docker:build
 cat <<EOL > /etc/model-loader.conf
-DISTR_CLIENT_ASDC_ADDRESS=<SDC_ADDRESS>
-DISTR_CLIENT_CONSUMER_GROUP=<UEB_CONSUMER_GROUP>  ;;  Uniquely identiy this group of model loaders.
-DISTR_CLIENT_CONSUMER_ID=<UEB_CONSUMER_GROUP_ID>  ;;  Uniquely identiythis model loader.
-DISTR_CLIENT_ENVIRONMENT_NAME=<ENVIRONMENT_NAME>  ;;  Environment name configured on the SDC
-DISTR_CLIENT_PASSWORD=<DISTR_PASSWORD>            ;;  Password to connect to SDC
-DISTR_CLIENT_USER=<USER_ID>                       ;;  User name to connect to SDC
+DISTR_CLIENT_ASDC_ADDRESS=${SDC_ADDRESS:-localhost}
+DISTR_CLIENT_CONSUMER_GROUP=${UEB_CONSUMER_GROUP:-SDCGroup}
+DISTR_CLIENT_CONSUMER_ID=${UEB_CONSUMER_GROUP_ID:-UEB}
+DISTR_CLIENT_ENVIRONMENT_NAME=${ENVIRONMENT_NAME:-Env}
+DISTR_CLIENT_PASSWORD=${SDC_PASSWORD:-password}
+DISTR_CLIENT_USER=${SDC_USER:-SDCUser}
 		     
-APP_SERVER_BASE_URL=https://<aai-address>:8443    ;; AAI Address (URL)
-APP_SERVER_AUTH_USER=<USER_ID>                    ;; User name to connect to AAI
-APP_SERVER_AUTH_PASSWORD=<PASSWORD>               ;; Password to connect to AAi
+APP_SERVER_BASE_URL=${APP_SERVER_URL:-https://localhost:8443}
+APP_SERVER_AUTH_USER=${APP_USER:-AppUser}
+APP_SERVER_AUTH_PASSWORD=${APP_PASSWORD:-password}
 EOL
-sudo docker run --env-file /etc/model-loader.conf model-loader /opt/jetty/jetty*/bin/startup.sh
+docker run --env-file /etc/model-loader.conf model-loader
 popd

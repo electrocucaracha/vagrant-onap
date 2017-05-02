@@ -7,7 +7,9 @@ echo "nameserver 10.0.0.1" >> /etc/resolvconf/resolv.conf.d/head
 resolvconf -u
 
 # Download dependencies
+apt-get update -y
 add-apt-repository -y ppa:openjdk-r/ppa
+add-apt-repository -y ppa:andrei-pozolotin/maven3
 apt-get update -y
 apt-get install -y \
   apt-transport-https \
@@ -15,9 +17,10 @@ apt-get install -y \
   curl \
   software-properties-common \
   openjdk-8-jdk \
-  git \ 
-  ntp \
-  ntpdate
+  maven3 \
+  git  
+# Force Maven3 to use jdk8
+apt-get purge openjdk-7-jdk -y
 
 # Download scripts from Nexus
 curl -k $nexus_repo/org.openecomp.demo/boot/$artifacts_version/aai_serv.sh -o /opt/aai_serv.sh
@@ -27,7 +30,7 @@ update-rc.d aai_serv.sh defaults
 
 # Download and install docker-engine and docker-compose
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository \
+add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
    $(lsb_release -cs) \
    stable"

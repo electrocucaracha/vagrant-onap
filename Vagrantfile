@@ -46,7 +46,7 @@ Vagrant.configure("2") do |config|
     aai.vm.hostname = 'aai'
     aai.vm.network :private_network, ip: '192.168.50.4'
     aai.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 1 * 1024]
+      v.customize ["modifyvm", :id, "--memory", 3 * 1024]
     end
     aai.vm.provision 'shell' do |s| 
       s.path = 'aai.sh'
