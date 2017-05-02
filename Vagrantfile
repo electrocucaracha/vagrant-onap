@@ -26,9 +26,16 @@ conf = {
   'gitlab_branch'       => 'master'
 }
 
+vd_conf = ENV.fetch('VD_CONF', 'etc/settings.yaml')
+if File.exist?(vd_conf)
+  require 'yaml'
+  user_conf = YAML.load_file(vd_conf)
+  conf.update(user_conf)
+end
+
 Vagrant.configure("2") do |config|
-  config.vm.box = 'ubuntu/trusty64'
-  config.vm.synced_folder './opt', '/opt/'
+  config.vm.box = 'sputnik13/trusty64'
+  config.vm.synced_folder './opt', '/opt/', create: true
 
   config.vm.define :dns do |dns|
     dns.vm.hostname = 'dns'
@@ -52,6 +59,10 @@ Vagrant.configure("2") do |config|
       s.path = 'aai.sh'
       s.env = conf
     end 
+    aai.vm.provider "libvirt" do |v|
+      v.memory = 3 * 1024
+      v.nested = true
+    end
   end
 
   config.vm.define :mso do |mso|
@@ -59,6 +70,10 @@ Vagrant.configure("2") do |config|
     mso.vm.network :private_network, ip: '192.168.50.5'
     mso.vm.provider "virtualbox" do |v|
       v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+    end
+    mso.vm.provider "libvirt" do |v|
+      v.memory = 4 * 1024
+      v.nested = true
     end
     mso.vm.provision 'shell' do |s| 
       s.path = 'mso.sh'

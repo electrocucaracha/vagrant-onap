@@ -8,6 +8,7 @@ resolvconf -u
 
 # Download dependencies
 apt-get update -y
+apt-get install -y software-properties-common
 add-apt-repository -y ppa:openjdk-r/ppa
 add-apt-repository -y ppa:andrei-pozolotin/maven3
 apt-get update -y
@@ -15,7 +16,6 @@ apt-get install -y \
   apt-transport-https \
   ca-certificates \
   curl \
-  software-properties-common \
   openjdk-8-jdk \
   maven3 \
   git  
