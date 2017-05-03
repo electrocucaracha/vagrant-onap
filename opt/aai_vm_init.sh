@@ -15,7 +15,7 @@ docker run -d --net=host --name="hbase-1.2.3" aaidocker/aai-hbase-1.2.3
 # Wait 3 minutes before instantiating the A&AI container
 sleep 180
 
-if [ -d /opt/aai/src/aai-service ]; then
+if [ ! -d /opt/aai/src/aai-service ]; then
   git clone https://git.onap.org/aai/aai-service /opt/aai/src/aai-service
 fi
 pushd /opt/aai/src/aai-service
