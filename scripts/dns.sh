@@ -2,10 +2,11 @@
 
 set -o xtrace
 
-# Download dependencies
-add-apt-repository -y ppa:openjdk-r/ppa
-apt-get update
-apt-get install -y apt-transport-https ca-certificates wget openjdk-8-jdk bind9 bind9utils bind9-doc ntp ntpdate
+source /var/onap/common.sh
+
+install_dev_tools
+install_java8
+install_bind9
 
 # Download script
 mkdir /etc/bind/zones

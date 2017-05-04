@@ -2,16 +2,20 @@
 
 set -o xtrace
 
-cd /opt
-./common.sh
+source /var/onap/common.sh
 
-# Download scripts from Nexus
-curl -k $nexus_repo/org.openecomp.demo/boot/$artifacts_version/mr_serv.sh -o /etc/init.d/mr_serv.sh
-chmod +x /etc/init.d/mr_serv.sh
-update-rc.d mr_serv.sh defaults
+configure_dns
+create_configuration_files
+install_dev_tools
+install_java8
+install_maven3
+install_docker_engine
+install_docker_compose
+
+configure_service mr_serv.sh
 
 # Run docker-compose to spin up containers
 if [ ! -d /opt/dcae/message-router ]; then
   git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/dcae/demo/startup/message-router.git /opt/dcae/message-router 
 fi
-./mr_vm_init.sh
+bash /opt/mr_vm_init.sh

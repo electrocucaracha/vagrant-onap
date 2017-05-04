@@ -36,6 +36,7 @@ end
 Vagrant.configure("2") do |config|
   config.vm.box = 'sputnik13/trusty64'
   config.vm.synced_folder './opt', '/opt/', create: true
+  config.vm.synced_folder './scripts', '/var/onap/', create: true
 
   config.vm.define :dns do |dns|
     dns.vm.hostname = 'dns'
@@ -44,7 +45,7 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--memory", 1 * 1024]
     end
     dns.vm.provision 'shell' do |s| 
-      s.path = 'dns.sh'
+      s.path = 'scripts/dns.sh'
       s.env = conf
     end 
   end
@@ -56,7 +57,7 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--memory", 3 * 1024]
     end
     aai.vm.provision 'shell' do |s| 
-      s.path = 'aai.sh'
+      s.path = 'scripts/aai.sh'
       s.env = conf
     end 
     aai.vm.provider "libvirt" do |v|
@@ -76,7 +77,7 @@ Vagrant.configure("2") do |config|
       v.nested = true
     end
     mso.vm.provision 'shell' do |s| 
-      s.path = 'mso.sh'
+      s.path = 'scripts/mso.sh'
       s.env = conf
     end 
   end
@@ -92,7 +93,7 @@ Vagrant.configure("2") do |config|
       v.nested = true
     end
     message_router.vm.provision 'shell' do |s| 
-      s.path = 'message_router.sh'
+      s.path = 'scripts/message_router.sh'
       s.env = conf
     end
   end
@@ -108,7 +109,7 @@ Vagrant.configure("2") do |config|
       v.nested = true
     end
     robot.vm.provision 'shell' do |s|
-      s.path = 'robot.sh'
+      s.path = 'scripts/robot.sh'
       s.env = conf
     end
   end
