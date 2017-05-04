@@ -98,6 +98,19 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define :robot do |robot|
+    robot.vm.hostname = 'robot'
+    robot.vm.network :private_network, ip: '192.168.50.7'
+    robot.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+    end
+    robot.vm.provider "libvirt" do |v|
+      v.memory = 4 * 1024
+      v.nested = true
+    end
+    robot.vm.provision 'shell' do |s|
+      s.path = 'robot.sh'
+      s.env = conf
+    end
   end
 
   config.vm.define :vid do |vid|
