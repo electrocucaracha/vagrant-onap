@@ -82,6 +82,19 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define :message_router do |message_router|
+    message_router.vm.hostname = 'message-router'
+    message_router.vm.network :private_network, ip: '192.168.50.6'
+    message_router.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+    end
+    message_router.vm.provider "libvirt" do |v|
+      v.memory = 4 * 1024
+      v.nested = true
+    end
+    message_router.vm.provision 'shell' do |s| 
+      s.path = 'message_router.sh'
+      s.env = conf
+    end
   end
 
   config.vm.define :robot do |robot|
