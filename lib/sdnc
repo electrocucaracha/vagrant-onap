@@ -31,7 +31,7 @@ function install_sdnc {
     if [ ! -d /opt/sdnc ]; then
         git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/sdnc/oam.git /opt/sdnc
     fi
-    pushd /opt/sdnc
+    pushd /opt/sdnc/installation/src/main/yaml
     /opt/docker/docker-compose up -d
     popd
 }
