@@ -28,10 +28,10 @@ function pull_dgbuilder_sdnc {
 
 # install_sdnc() -  Download and install SDNC services from source code
 function install_sdnc {
-    if [ ! -d /opt/sdnc ]; then
-        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/sdnc/oam.git /opt/sdnc
+    if [ ! -d /opt/sdnc/oam ]; then
+        git clone -b $gerrit_branch --single-branch https://git.onap.org/sdnc/oam /opt/sdnc/oam
     fi
-    pushd /opt/sdnc/installation/src/main/yaml
+    pushd /opt/sdnc/oam/installation/src/main/yaml
     /opt/docker/docker-compose up -d
     popd
 }
