@@ -8,6 +8,7 @@ function install_vid {
        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/vid.git /opt/vid
     fi
     pushd /opt/vid
+    docker pull mariadb
     docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
     docker pull $nexus_docker_repo/openecomp/vid:$docker_version
 
