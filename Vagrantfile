@@ -33,131 +33,161 @@ if File.exist?(vd_conf)
   conf.update(user_conf)
 end
 
+deploy_mode = ENV.fetch('DEPLOY_MODE', 'distributed')
+
 Vagrant.configure("2") do |config|
   config.vm.box = 'sputnik13/trusty64'
   config.vm.synced_folder './opt', '/opt/', create: true
-  config.vm.synced_folder './scripts', '/var/onap/', create: true
+  config.vm.synced_folder './lib', '/var/onap/', create: true
 
-  config.vm.define :dns do |dns|
-    dns.vm.hostname = 'dns'
-    dns.vm.network :private_network, ip: '192.168.50.3'
-    dns.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 1 * 1024]
-    end
-    dns.vm.provision 'shell' do |s| 
-      s.path = 'scripts/dns.sh'
-      s.env = conf
-    end 
-  end
+  case deploy_mode
 
-  config.vm.define :aai do |aai|
-    aai.vm.hostname = 'aai'
-    aai.vm.network :private_network, ip: '192.168.50.4'
-    aai.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 3 * 1024]
-    end
-    aai.vm.provision 'shell' do |s| 
-      s.path = 'scripts/aai.sh'
-      s.env = conf
-    end 
-    aai.vm.provider "libvirt" do |v|
-      v.memory = 3 * 1024
-      v.nested = true
-    end
-  end
+  when 'all-in-one'
 
-  config.vm.define :mso do |mso|
-    mso.vm.hostname = 'mso-server'
-    mso.vm.network :private_network, ip: '192.168.50.5'
-    mso.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+    config.vm.define :all_in_one do |all_in_one|
+      all_in_one.vm.hostname = 'all-in-one'
+      all_in_one.vm.network :private_network, ip: '192.168.50.3'
+      all_in_one.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 12 * 1024]
+      end
+      all_in_one.vm.provision 'shell' do |s| 
+        s.path = 'scripts/all_in_one.sh'
+        s.env = conf
+      end
+      all_in_one.vm.provider "libvirt" do |v|
+        v.memory = 12 * 1024
+        v.nested = true
+      end
     end
-    mso.vm.provider "libvirt" do |v|
-      v.memory = 4 * 1024
-      v.nested = true
-    end
-    mso.vm.provision 'shell' do |s| 
-      s.path = 'scripts/mso.sh'
-      s.env = conf
-    end 
-  end
 
-  config.vm.define :message_router do |message_router|
-    message_router.vm.hostname = 'message-router'
-    message_router.vm.network :private_network, ip: '192.168.50.6'
-    message_router.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-    end
-    message_router.vm.provider "libvirt" do |v|
-      v.memory = 4 * 1024
-      v.nested = true
-    end
-    message_router.vm.provision 'shell' do |s| 
-      s.path = 'scripts/message_router.sh'
-      s.env = conf
-    end
-  end
+  when 'distributed'
 
-  config.vm.define :robot do |robot|
-    robot.vm.hostname = 'robot'
-    robot.vm.network :private_network, ip: '192.168.50.7'
-    robot.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+    config.vm.define :dns do |dns|
+      dns.vm.hostname = 'dns'
+      dns.vm.network :private_network, ip: '192.168.50.3'
+      dns.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 1 * 1024]
+      end
+      dns.vm.provision 'shell' do |s| 
+        s.path = 'scripts/dns.sh'
+        s.env = conf
+      end 
+      dns.vm.provider "libvirt" do |v|
+        v.memory = 1 * 1024
+        v.nested = true
+      end
     end
-    robot.vm.provider "libvirt" do |v|
-      v.memory = 4 * 1024
-      v.nested = true
+  
+    config.vm.define :aai do |aai|
+      aai.vm.hostname = 'aai'
+      aai.vm.network :private_network, ip: '192.168.50.4'
+      aai.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 3 * 1024]
+      end
+      aai.vm.provision 'shell' do |s| 
+        s.path = 'scripts/aai.sh'
+        s.env = conf
+      end 
+      aai.vm.provider "libvirt" do |v|
+        v.memory = 3 * 1024
+        v.nested = true
+      end
     end
-    robot.vm.provision 'shell' do |s|
-      s.path = 'scripts/robot.sh'
-      s.env = conf
+  
+    config.vm.define :mso do |mso|
+      mso.vm.hostname = 'mso-server'
+      mso.vm.network :private_network, ip: '192.168.50.5'
+      mso.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+      end
+      mso.vm.provider "libvirt" do |v|
+        v.memory = 4 * 1024
+        v.nested = true
+      end
+      mso.vm.provision 'shell' do |s| 
+        s.path = 'scripts/mso.sh'
+        s.env = conf
+      end 
     end
-  end
+  
+    config.vm.define :message_router do |message_router|
+      message_router.vm.hostname = 'message-router'
+      message_router.vm.network :private_network, ip: '192.168.50.6'
+      message_router.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+      end
+      message_router.vm.provider "libvirt" do |v|
+        v.memory = 4 * 1024
+        v.nested = true
+      end
+      message_router.vm.provision 'shell' do |s| 
+        s.path = 'scripts/message_router.sh'
+        s.env = conf
+      end
+    end
+  
+    config.vm.define :robot do |robot|
+      robot.vm.hostname = 'robot'
+      robot.vm.network :private_network, ip: '192.168.50.7'
+      robot.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+      end
+      robot.vm.provider "libvirt" do |v|
+        v.memory = 4 * 1024
+        v.nested = true
+      end
+      robot.vm.provision 'shell' do |s|
+        s.path = 'scripts/robot.sh'
+        s.env = conf
+      end
+    end
+  
+    config.vm.define :vid do |vid|
+      vid.vm.hostname = 'vid'
+      vid.vm.network :private_network, ip: '192.168.50.8'
+      vid.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+      end
+      vid.vm.provider "libvirt" do |v|
+        v.memory = 4 * 1024
+        v.nested = true
+      end
+      vid.vm.provision 'shell' do |s|
+        s.path = 'scripts/vid.sh'
+        s.env = conf
+      end
+    end
+  
+    config.vm.define :sdnc do |sdnc|
+      sdnc.vm.hostname = 'sdnc'
+      sdnc.vm.network :private_network, ip: '192.168.50.9'
+      sdnc.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+      end
+      sdnc.vm.provider "libvirt" do |v|
+        v.memory = 4 * 1024
+        v.nested = true
+      end
+      sdnc.vm.provision 'shell' do |s|
+        s.path = 'scripts/sdnc.sh'
+        s.env = conf
+      end
+    end
+  
+    config.vm.define :sdc do |sdc|
+    end
+  
+    config.vm.define :portal do |portal|
+    end
+  
+    config.vm.define :dcae_controller do |dcae_controller|
+    end
+  
+    config.vm.define :policy do |policy|
+    end
+  
+    config.vm.define :appc do |appc|
+    end
 
-  config.vm.define :vid do |vid|
-    vid.vm.hostname = 'vid'
-    vid.vm.network :private_network, ip: '192.168.50.8'
-    vid.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-    end
-    vid.vm.provider "libvirt" do |v|
-      v.memory = 4 * 1024
-      v.nested = true
-    end
-    vid.vm.provision 'shell' do |s|
-      s.path = 'scripts/vid.sh'
-      s.env = conf
-    end
-  end
-
-  config.vm.define :sdnc do |sdnc|
-    sdnc.vm.hostname = 'sdnc'
-    sdnc.vm.network :private_network, ip: '192.168.50.9'
-    sdnc.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-    end
-    sdnc.vm.provider "libvirt" do |v|
-      v.memory = 4 * 1024
-      v.nested = true
-    end
-    sdnc.vm.provision 'shell' do |s|
-      s.path = 'scripts/sdnc.sh'
-      s.env = conf
-    end
-  end
-
-  config.vm.define :sdc do |sdc|
-  end
-
-  config.vm.define :portal do |portal|
-  end
-
-  config.vm.define :dcae_controller do |dcae_controller|
-  end
-
-  config.vm.define :policy do |policy|
-  end
-
-  config.vm.define :appc do |appc|
   end
 end

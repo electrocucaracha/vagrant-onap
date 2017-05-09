@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -o xtrace
+
+# install_message_router() - Downloads and configure message router source code
+function install_message_router {
+# Run docker-compose to spin up containers
+    if [ ! -d /opt/dcae/message-router ]; then
+        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/dcae/demo/startup/message-router.git /opt/dcae/message-router
+    fi
+    pushd /opt/dcae/message-router
+    bash deploy.sh
+    popd
+}
+
+# init_mr() - Function that initialize Message Router services
+function init_mr {
+    install_message_router
+}

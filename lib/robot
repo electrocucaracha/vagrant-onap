@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -o xtrace
+
+# install_testsuite_properties() - Download and install testsuite properties
+function install_testsuite_properties {
+    mkdir /opt/eteshare/config
+
+    # Run docker-compose to spin up containers
+    if [ ! -d /opt/testsuite/properties ]; then
+        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/testsuite/properties.git /opt/testsuite/properties
+    fi
+    pushd /opt/testsuite/properties
+    cp integration_* /opt/eteshare/config
+    cp vm_config2robot.sh /opt/eteshare/config
+    cp ete.sh /opt
+    cp demo.sh /opt
+
+    chmod +x /opt/ete.sh
+    chmod +x /opt/demo.sh
+    popd
+}
+
+# run_testsuite_image() - Pull and run testsuite docker image
+function run_testsuite_image {
+    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
+    docker pull $nexus_docker_repo/openecomp/testsuite:$docker_version
+    docker rm -f openecompete_container
+    docker run -d --name openecompete_container -v /opt/eteshare:/share -p 88:88 $nexus_docker_repo/openecomp/testsuite:$docker_version
+}
+
+# init_robot() - Function that initialize Robot services
+function init_robot {
+    install_testsuite_properties
+    run_testsuite_image
+}
