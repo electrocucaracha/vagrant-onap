@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -o xtrace
+
+# is_package_installed() - Function to tell if a package is installed
+function is_package_installed {
+    if [[ -z "$@" ]]; then
+        return 1
+    fi
+    dpkg -s "$@" > /dev/null 2> /dev/null
+}

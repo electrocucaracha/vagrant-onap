@@ -2,6 +2,8 @@
 
 set -o xtrace
 
+source /var/onap/commons
+
 # configure_dns() - DNS/GW IP address configuration
 function configure_dns {
     echo "nameserver 10.0.0.1" >> /etc/resolvconf/resolv.conf.d/head
@@ -20,14 +22,19 @@ function create_configuration_files {
     echo $docker_version > /opt/config/docker_version.txt
 }
 
+# install_git() - Install Git tools
+function install_git {
+    apt-get update -y
+    apt-get install -y git
+}
+
 # install_dev_tools() - Install basic dependencies
 function install_dev_tools {
     apt-get update -y
     apt-get install -y \
         apt-transport-https \
         ca-certificates \
-        curl \
-        git
+        curl
 }
 
 # install_bind() - Install bind utils
@@ -49,10 +56,15 @@ function configure_bind {
     service bind9 restart
 }
 
-# install_java() - Install java binaries
-function install_java {
+# install_add_apt_repository() - Install Add Apt repository toolset
+function install_add_apt_repository {
     apt-get update -y
     apt-get install -y software-properties-common
+}
+
+# install_java() - Install java binaries
+function install_java {
+    is_package_installed software-properties-common || install_add_apt_repository
     add-apt-repository -y ppa:openjdk-r/ppa
     apt-get update -y
     apt-get install -y openjdk-8-jdk
@@ -60,8 +72,10 @@ function install_java {
 
 # install_maven() - Install maven binaries
 function install_maven {
-    apt-get update -y
-    apt-get install -y software-properties-common
+    if ! is_package_installed java; then
+        install_java
+    fi
+    is_package_installed software-properties-common || install_add_apt_repository
     add-apt-repository -y ppa:andrei-pozolotin/maven3
     apt-get update -y
     apt-get install -y maven3 
@@ -76,12 +90,13 @@ function install_maven {
 
 # install_docker_engine() - Download and install docker-engine 
 function install_docker_engine {
+    is_package_installed software-properties-common || install_add_apt_repository
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     add-apt-repository \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
         $(lsb_release -cs) \
         stable"
-    apt-get update
+    apt-get update -y
     apt-get install -y docker-ce
     service docker start
 }
