@@ -28,6 +28,7 @@ function pull_dgbuilder_sdnc {
 
 # install_sdnc() -  Download and install SDNC services from source code
 function install_sdnc {
+    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
     if [ ! -d /opt/sdnc/oam ]; then
         git clone -b $gerrit_branch --single-branch https://git.onap.org/sdnc/oam /opt/sdnc/oam
     fi
