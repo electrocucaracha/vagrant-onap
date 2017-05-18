@@ -3,6 +3,7 @@
 set -o xtrace
 
 source /var/onap/functions
+source /var/onap/sdc
 source /var/onap/aai
 source /var/onap/mso
 source /var/onap/message_router
@@ -20,7 +21,7 @@ install_maven
 install_docker_engine
 install_docker_compose
 
-for serv in aai mso mr robot vid sdnc; do
+for serv in sdc aai mso mr robot vid sdnc; do
     configure_service ${serv}_serv.sh
     init_${serv}
 done
