@@ -34,11 +34,20 @@ if File.exist?(vd_conf)
 end
 
 deploy_mode = ENV.fetch('DEPLOY_MODE', 'distributed')
+sdc_volume='vol1-sdc-data.vdi'
 
 Vagrant.configure("2") do |config|
   config.vm.box = 'sputnik13/trusty64'
+#  config.vm.box = 'ubuntu/trusty64'
   config.vm.synced_folder './opt', '/opt/', create: true
   config.vm.synced_folder './lib', '/var/onap/', create: true
+  config.vm.provider "virtualbox" do |v|
+    v.customize ["modifyvm", :id, "--memory", 4 * 1024]
+  end
+  config.vm.provider "libvirt" do |v|
+    v.memory = 4 * 1024
+    v.nested = true
+  end
 
   case deploy_mode
 
@@ -49,14 +58,19 @@ Vagrant.configure("2") do |config|
       all_in_one.vm.network :private_network, ip: '192.168.50.3'
       all_in_one.vm.provider "virtualbox" do |v|
         v.customize ["modifyvm", :id, "--memory", 12 * 1024]
-      end
-      all_in_one.vm.provision 'shell' do |s| 
-        s.path = 'scripts/all_in_one.sh'
-        s.env = conf
+        unless File.exist?(sdc_volume)
+           v.customize ['createhd', '--filename', sdc_volume, '--size', 20 * 1024]
+        end
+        v.customize ['storageattach', :id, '--storagectl', 'SATA', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', sdc_volume]
       end
       all_in_one.vm.provider "libvirt" do |v|
         v.memory = 12 * 1024
         v.nested = true
+        v.storage :file, path: sdc_volume, bus: 'sata', device: 'sdb', size: '2G'
+      end
+      all_in_one.vm.provision 'shell' do |s|
+        s.path = 'scripts/all_in_one.sh'
+        s.env = conf
       end
     end
 
@@ -68,42 +82,49 @@ Vagrant.configure("2") do |config|
       dns.vm.provider "virtualbox" do |v|
         v.customize ["modifyvm", :id, "--memory", 1 * 1024]
       end
-      dns.vm.provision 'shell' do |s| 
-        s.path = 'scripts/dns.sh'
-        s.env = conf
-      end 
       dns.vm.provider "libvirt" do |v|
         v.memory = 1 * 1024
         v.nested = true
+      end
+      dns.vm.provision 'shell' do |s|
+        s.path = 'scripts/dns.sh'
+        s.env = conf
+      end 
+    end
+
+    config.vm.define :sdc do |sdc|
+      sdc.vm.hostname = 'sdc'
+      sdc.vm.network :private_network, ip: '192.168.50.4'
+      sdc.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 1 * 1024]
+        unless File.exist?(sdc_volume)
+           v.customize ['createhd', '--filename', sdc_volume, '--size', 20 * 1024]
+        end
+        v.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', sdc_volume]
+      end
+      sdc.vm.provider "libvirt" do |v|
+        v.memory = 1 * 1024
+        v.nested = true
+        v.storage :file, path: sdc_volume, bus: 'sata', device: 'sdb', size: '2G'
+      end
+      sdc.vm.provision 'shell' do |s|
+        s.path = 'scripts/sdc.sh'
+        s.env = conf
       end
     end
   
     config.vm.define :aai do |aai|
       aai.vm.hostname = 'aai'
-      aai.vm.network :private_network, ip: '192.168.50.4'
-      aai.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 3 * 1024]
-      end
+      aai.vm.network :private_network, ip: '192.168.50.5'
       aai.vm.provision 'shell' do |s| 
         s.path = 'scripts/aai.sh'
         s.env = conf
       end 
-      aai.vm.provider "libvirt" do |v|
-        v.memory = 3 * 1024
-        v.nested = true
-      end
     end
   
     config.vm.define :mso do |mso|
       mso.vm.hostname = 'mso-server'
-      mso.vm.network :private_network, ip: '192.168.50.5'
-      mso.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-      end
-      mso.vm.provider "libvirt" do |v|
-        v.memory = 4 * 1024
-        v.nested = true
-      end
+      mso.vm.network :private_network, ip: '192.168.50.6'
       mso.vm.provision 'shell' do |s| 
         s.path = 'scripts/mso.sh'
         s.env = conf
@@ -112,14 +133,7 @@ Vagrant.configure("2") do |config|
   
     config.vm.define :message_router do |message_router|
       message_router.vm.hostname = 'message-router'
-      message_router.vm.network :private_network, ip: '192.168.50.6'
-      message_router.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-      end
-      message_router.vm.provider "libvirt" do |v|
-        v.memory = 4 * 1024
-        v.nested = true
-      end
+      message_router.vm.network :private_network, ip: '192.168.50.7'
       message_router.vm.provision 'shell' do |s| 
         s.path = 'scripts/message_router.sh'
         s.env = conf
@@ -128,14 +142,7 @@ Vagrant.configure("2") do |config|
   
     config.vm.define :robot do |robot|
       robot.vm.hostname = 'robot'
-      robot.vm.network :private_network, ip: '192.168.50.7'
-      robot.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-      end
-      robot.vm.provider "libvirt" do |v|
-        v.memory = 4 * 1024
-        v.nested = true
-      end
+      robot.vm.network :private_network, ip: '192.168.50.8'
       robot.vm.provision 'shell' do |s|
         s.path = 'scripts/robot.sh'
         s.env = conf
@@ -144,14 +151,7 @@ Vagrant.configure("2") do |config|
   
     config.vm.define :vid do |vid|
       vid.vm.hostname = 'vid'
-      vid.vm.network :private_network, ip: '192.168.50.8'
-      vid.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-      end
-      vid.vm.provider "libvirt" do |v|
-        v.memory = 4 * 1024
-        v.nested = true
-      end
+      vid.vm.network :private_network, ip: '192.168.50.9'
       vid.vm.provision 'shell' do |s|
         s.path = 'scripts/vid.sh'
         s.env = conf
@@ -160,21 +160,11 @@ Vagrant.configure("2") do |config|
   
     config.vm.define :sdnc do |sdnc|
       sdnc.vm.hostname = 'sdnc'
-      sdnc.vm.network :private_network, ip: '192.168.50.9'
-      sdnc.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-      end
-      sdnc.vm.provider "libvirt" do |v|
-        v.memory = 4 * 1024
-        v.nested = true
-      end
+      sdnc.vm.network :private_network, ip: '192.168.50.10'
       sdnc.vm.provision 'shell' do |s|
         s.path = 'scripts/sdnc.sh'
         s.env = conf
       end
-    end
-  
-    config.vm.define :sdc do |sdc|
     end
   
     config.vm.define :portal do |portal|
