@@ -28,6 +28,12 @@ function install_git {
     apt-get install -y git
 }
 
+# install_mysql_client() - Install MySQL client tools
+function install_mysql_client {
+    apt-get update -y
+    apt-get install -y mysql-client
+}
+
 # install_dev_tools() - Install basic dependencies
 function install_dev_tools {
     apt-get update -y

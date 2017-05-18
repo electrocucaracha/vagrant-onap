@@ -168,6 +168,12 @@ Vagrant.configure("2") do |config|
     end
   
     config.vm.define :portal do |portal|
+      portal.vm.hostname = 'portal'
+      portal.vm.network :private_network, ip: '192.168.50.11'
+      portal.vm.provision 'shell' do |s|
+        s.path = 'scripts/portal.sh'
+        s.env = conf
+      end
     end
   
     config.vm.define :dcae_controller do |dcae_controller|
