@@ -2,45 +2,21 @@
 
 set -o xtrace
 
-# pull_sdnc() - Pull SDNC docker image
-function pull_sdnc {
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-
-    docker pull $nexus_docker_repo/openecomp/sdnc-image:$docker_version
-    docker tag $nexus_docker_repo/openecomp/sdnc-image:$docker_version openecomp/sdnc-image:latest
-}
-
-# pull_admportal_sdn() - Pull SDNC docker image
-function pull_admportal_sdnc {
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-
-    docker pull $nexus_docker_repo/openecomp/admportal-sdnc-image:$docker_version
-    docker tag $nexus_docker_repo/openecomp/admportal-sdnc-image:$docker_version openecomp/admportal-sdnc-image:latest
-}
-
-# pull_dgbuilder_sdnc() - Pull SDNC docker image
-function pull_dgbuilder_sdnc {
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-
-    docker pull $nexus_docker_repo/openecomp/dgbuilder-sdnc-image:$docker_version
-    docker tag $nexus_docker_repo/openecomp/dgbuilder-sdnc-image:$docker_version openecomp/dgbuilder-sdnc-image:latest
-}
-
 # install_sdnc() -  Download and install SDNC services from source code
 function install_sdnc {
     export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
-    if [ ! -d /opt/sdnc/oam ]; then
-        git clone -b $gerrit_branch --single-branch https://git.onap.org/sdnc/oam /opt/sdnc/oam
-    fi
-    pushd /opt/sdnc/oam/installation/src/main/yaml
+    local src_folder=/opt/sdnc/oam
+    clone_repo sdnc/oam /opt/sdnc/oam
+    pushd $src_folder/installation/src/main/yaml
+    install_docker_compose
     /opt/docker/docker-compose up -d
     popd
 }
 
 # init_sdnc() - Function that initialize SDNC services
 function init_sdnc {
-    pull_sdnc
-    pull_admportal_sdnc
-    pull_dgbuilder_sdnc
+    pull_openecomp_image sdnc-image openecomp/sdnc-image:latest
+    pull_openecomp_image admportal-sdnc-image openecomp/admportal-sdnc-image:latest
+    pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest
     install_sdnc
 }

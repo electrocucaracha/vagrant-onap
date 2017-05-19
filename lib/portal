@@ -4,50 +4,34 @@ set -o xtrace
 
 source /var/onap/functions
 
-# pull_portaldb_image() - Pull PortalDB container image from a Docker Registry Hub
-function pull_portaldb_image {
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-    docker pull $nexus_docker_repo/openecomp/portaldb:$docker_version
-    docker tag $nexus_docker_repo/openecomp/portaldb:$docker_version ecompdb:portal
-}
-
-# pull_portalapps_image() - Pull PortalApps container image from a Docker Registry Hub
-function pull_portalapps_image {
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-    docker pull $nexus_docker_repo/openecomp/portalapps:$docker_version
-    docker tag $nexus_docker_repo/openecomp/portalapps:$docker_version ep:1610-1
-}
-
 # install_mariadb() - Pull and create a MariaDB container
 function install_mariadb {
+    is_package_installed docker-ce || install_docker
     docker pull mariadb
     docker create --name data_vol_portal -v /var/lib/mysql mariadb
 }
 
 # install_portal() - Function that pulls and install the source code of Portal
 function install_portal {
-    if [ ! -d /opt/portal ]; then
-        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/portal.git /opt/portal
-    fi
+    clone_repo portal /opt/portal
 
     chmod +x /opt/portal/deliveries/new_start.sh
     chmod +x /opt/portal/deliveries/new_stop.sh
     chmod +x /opt/portal/deliveries/dbstart.sh
+    mkdir -p /PROJECT/OpenSource/UbuntuEP/logs
     unzip -o /opt/portal/deliveries/etc.zip -d /PROJECT/OpenSource/UbuntuEP/
 
     docker rm -f ecompdb_portal
     docker rm -f 1610-1
 
-    pushd /opt/portal/deliveries
-    ./dbstart.sh
-    ./new_start.sh
-    popd
+    bash /opt/portal/deliveries/dbstart.sh
+    bash /opt/portal/deliveries/new_start.sh
 
     sleep 180
 
     if [ ! -e /opt/config/boot.txt ]; then
         IP_ADDRESS=$(ifconfig eth0 | grep "inet addr" | tr -s ' ' | cut -d' ' -f3 | cut -d':' -f2)
-        is_package_installed mysql-client || install_mysql_client
+        install_package mysql-client
         mysql -u root -p'Aa123456' -h $IP_ADDRESS < /opt/portal/deliveries/Apps_Users_OnBoarding_Script.sql
         echo "yes" > /opt/config/boot.txt
     fi
@@ -55,8 +39,8 @@ function install_portal {
 
 # init_portal() - Function that initialize Portal services
 function init_portal {
-    pull_portaldb_image
-    pull_portalapps_image
+    pull_openecomp_image portaldb ecompdb:portal
+    pull_openecomp_image portalapps ep:1610-1
     install_mariadb
     install_portal
 }

@@ -9,3 +9,12 @@ function is_package_installed {
     fi
     dpkg -s "$@" > /dev/null 2> /dev/null
 }
+
+# install_package() - Install specific package if doesn't exist
+function install_package {
+    local package=$1
+    if ! is_package_installed $package; then
+        apt-get update -y
+        apt-get install -y $package
+    fi
+}

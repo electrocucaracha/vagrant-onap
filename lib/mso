@@ -4,9 +4,8 @@ set -o xtrace
 
 # install_mso_docker_config() - Download and install MSO Docker configuration project
 function install_mso_docker_config {
-    if [ ! -d /opt/mso/docker-config ]; then
-        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/mso/docker-config.git /opt/mso/docker-config
-    fi
+    local src_folder=/opt/mso/docker-config
+    clone_repo mso/docker-config $src_folder
     MSO_ENCRYPTION_KEY=$(cat /opt/mso/docker-config/encryption.key)
     echo -n "$openstack_api_key" | openssl aes-128-ecb -e -K $MSO_ENCRYPTION_KEY -nosalt | xxd -c 256 -p > /opt/config/api_key.txt
 
@@ -58,8 +57,10 @@ EOF
     export MSO_DOCKER_IMAGE_VERSION=$docker_version
 
     # Deploy the environment
-    pushd /opt/mso/docker-config
+    pushd $src_folder
     chmod +x deploy.sh
+    is_package_installed docker-ce || install_docker
+    install_docker_compose
     # This script takes in input 2 nexus repos (the first one for the MSO image, the second one for mariadb)
     ./deploy.sh $nexus_docker_repo $nexus_username $nexus_password $nexus_docker_repo $nexus_username $nexus_password
     popd

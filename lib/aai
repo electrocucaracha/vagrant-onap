@@ -8,42 +8,27 @@ hbase_version=1.2.3
 
 # pull_hbase_image() - Pull HBase container image from a Docker Registry Hub
 function pull_hbase_image {
+    is_package_installed docker-ce || install_docker
     docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
     docker pull $nexus_docker_repo/aaidocker/aai-hbase-${hbase_version}
 }
 
-# pull_ajsc_aai_image() - Pull AJSC AAI container image from a Docker Registry Hub
-function pull_ajsc_aai_image {
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-    docker pull $nexus_docker_repo/openecomp/ajsc-aai:$docker_version
-}
-
-# pull_model_loader_image() - Pull model-loader container image form a Docker Registry Hub
-function pull_model_loader_image {
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-    docker pull $nexus_docker_repo/openecomp/model-loader:$docker_version
-}
-
 # build_ajsc_aai_image() - Build AJSC AAI image from source code
 function build_ajsc_aai_image {
+    local src_folder=/opt/aai/src/aai-service
     is_package_installed maven || install_maven
-    if [ ! -d /opt/aai/src/aai-service ]; then
-        is_package_installed git || install_git
-        git clone https://git.onap.org/aai/aai-service /opt/aai/src/aai-service
-    fi
-    pushd /opt/aai/src/aai-service
+    clone_repo aai/aai-service $src_folder
+    pushd $src_folder
     mvn -N -P runAjsc
     popd
 }
 
 # build_model_loader_image() - Build model-loader container image from source code
 function build_model_loader_image {
+    local src_folder=/opt/aai/src/model-loader
     is_package_installed maven || install_maven
-    if [ ! -d /opt/aai/src/model-loader ]; then
-        is_package_installed git || install_git
-        git clone https://git.onap.org/aai/model-loader /opt/aai/src/model-loader
-    fi
-    pushd /opt/aai/src/model-loader
+    clone_repo aai/model-loader $src_folder
+    pushd $src_folder
     mvn clean package docker:build
     popd
 }
@@ -64,7 +49,7 @@ AAI_CHEF_LOC=/var/chef/aai-data/environments
 docker_gitbranch=master
 EOL
     docker rm -f aai-service
-    pull_ajsc_aai_image
+    pull_openecomp_image ajsc-aai
     docker run --env-file /etc/ajsc-aai.conf --name=aai-service --net=host -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt -it -d $nexus_docker_repo/openecomp/ajsc-aai:$docker_version
 }
 
@@ -89,7 +74,7 @@ EOL
         build_model_loader_image
         docker run --env-file /etc/model-loader.conf model-loader
     else
-        pull_model_loader_image
+        pull_openecomp_image model-loader
         docker run --name=model-loader-service -it -d --env-file /etc/model-loader.conf $nexus_docker_repo/openecomp/model-loader:$docker_version
     fi
 }
@@ -123,4 +108,3 @@ function init_aai {
     wait_for_sdc
     install_model_loader
 }
-

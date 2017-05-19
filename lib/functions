@@ -22,16 +22,27 @@ function create_configuration_files {
     echo $docker_version > /opt/config/docker_version.txt
 }
 
-# install_git() - Install Git tools
-function install_git {
-    apt-get update -y
-    apt-get install -y git
+# pull_openecomp_image() - Pull Docker container image from a Docker Registry Hub
+function pull_openecomp_image {
+    is_package_installed docker-ce || install_docker
+    local image=$1
+    local tag=$2
+    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
+    docker pull $nexus_docker_repo/openecomp/${image}:$docker_version
+    if [ -n ${tag+x} ]; then
+        docker tag $nexus_docker_repo/openecomp/${image}:$docker_version $tag
+    fi
 }
 
-# install_mysql_client() - Install MySQL client tools
-function install_mysql_client {
-    apt-get update -y
-    apt-get install -y mysql-client
+# clone_repo() - Clone Git repository into specific folder
+function clone_repo {
+    local repo_url=https://git.onap.org/
+    local repo=$1
+    local dest_folder=$2
+    if [ ! -d $2 ]; then
+        install_package git
+        git clone -b $gerrit_branch --single-branch ${repo_url}${repo} $dest_folder
+    fi  
 }
 
 # install_dev_tools() - Install basic dependencies
@@ -51,6 +62,7 @@ function install_bind {
 
 # configure_bind()- Configure bind utils
 function configure_bind {
+    is_package_installed bind9 || install_bind
     mkdir /etc/bind/zones
 
     curl -k $nexus_repo/org.openecomp.demo/boot/$artifacts_version/db_simpledemo_openecomp_org -o /etc/bind/zones/db.simpledemo.openecomp.org
@@ -62,18 +74,11 @@ function configure_bind {
     service bind9 restart
 }
 
-# install_add_apt_repository() - Install Add Apt repository toolset
-function install_add_apt_repository {
-    apt-get update -y
-    apt-get install -y software-properties-common
-}
-
 # install_java() - Install java binaries
 function install_java {
-    is_package_installed software-properties-common || install_add_apt_repository
+    install_package software-properties-common
     add-apt-repository -y ppa:openjdk-r/ppa
-    apt-get update -y
-    apt-get install -y openjdk-8-jdk
+    install_package openjdk-8-jdk
 }
 
 # install_maven() - Install maven binaries
@@ -81,10 +86,9 @@ function install_maven {
     if ! is_package_installed java; then
         install_java
     fi
-    is_package_installed software-properties-common || install_add_apt_repository
+    install_package software-properties-common
     add-apt-repository -y ppa:andrei-pozolotin/maven3
-    apt-get update -y
-    apt-get install -y maven3 
+    install_package mave3
 
     # Force Maven3 to use jdk8
     apt-get purge openjdk-7-jdk -y
@@ -94,20 +98,19 @@ function install_maven {
     cp /var/onap/files/settings.xml /home/vagrant/.m2/settings.xml
 }
 
-# install_docker_engine() - Download and install docker-engine 
-function install_docker_engine {
-    is_package_installed software-properties-common || install_add_apt_repository
+# install_docker() - Download and install docker-engine 
+function install_docker {
+    install_package software-properties-common
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     add-apt-repository \
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
         $(lsb_release -cs) \
         stable"
-    apt-get update -y
-    apt-get install -y docker-ce
+    install_package docker-ce
     service docker start
 }
 
-# install_docker_engine() - Download and install docker-engine 
+# install_docker_compose() - Download and install docker-engine 
 function install_docker_compose {
     local docker_compose_version=${1:-1.12.0}
     if [ ! -d /opt/docker ]; then

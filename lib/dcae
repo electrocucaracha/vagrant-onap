@@ -34,11 +34,10 @@ EOL
 
 # install_dcae() - Function that clones and installs the DCAE controller services from source code
 function install_dcae {
-    if [ ! -d /opt/dcae-startup-vm-controller ]; then
-        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/dcae/demo/startup/controller.git /opt/dcae-startup-vm-controller
-    fi
     export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
-    pushd /opt/dcae-startup-vm-controller
+    local src_folder=/opt/dcae-startup-vm-controller
+    clone_repo dcae/demo/startup/controller $src_folder
+    pushd $src_folder
     bash init.sh
     make up
     popd

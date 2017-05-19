@@ -66,7 +66,7 @@ Vagrant.configure("2") do |config|
       all_in_one.vm.provider "libvirt" do |v|
         v.memory = 12 * 1024
         v.nested = true
-        v.storage :file, path: sdc_volume, bus: 'sata', device: 'sdb', size: '2G'
+        v.storage :file, path: sdc_volume, bus: 'sata', device: 'vdb', size: '2G'
       end
       all_in_one.vm.provision 'shell' do |s|
         s.path = 'scripts/all_in_one.sh'
@@ -96,16 +96,16 @@ Vagrant.configure("2") do |config|
       sdc.vm.hostname = 'sdc'
       sdc.vm.network :private_network, ip: '192.168.50.4'
       sdc.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 1 * 1024]
+        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
         unless File.exist?(sdc_volume)
            v.customize ['createhd', '--filename', sdc_volume, '--size', 20 * 1024]
         end
         v.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', sdc_volume]
       end
       sdc.vm.provider "libvirt" do |v|
-        v.memory = 1 * 1024
+        v.memory = 4 * 1024
         v.nested = true
-        v.storage :file, path: sdc_volume, bus: 'sata', device: 'sdb', size: '2G'
+        v.storage :file, path: sdc_volume, bus: 'sata', device: 'vdb', size: '2G'
       end
       sdc.vm.provision 'shell' do |s|
         s.path = 'scripts/sdc.sh'
@@ -177,8 +177,8 @@ Vagrant.configure("2") do |config|
     end
   
     config.vm.define :dcae_controller do |dcae_controller|
-      dcae_controller.vm.hostname = 'dcae_controller'
-      dcae_controller.vm.network :private_network, ip: '192.168.50.11'
+      dcae_controller.vm.hostname = 'dcae'
+      dcae_controller.vm.network :private_network, ip: '192.168.50.12'
       dcae_controller.vm.provision 'shell' do |s|
         s.path = 'scripts/dcae_controller.sh'
         s.env = conf
