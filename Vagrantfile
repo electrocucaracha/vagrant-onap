@@ -15,7 +15,7 @@ conf = {
   'docker_version'      => '1.0-STAGING-latest',
   'gerrit_branch'       => 'release-1.0.0',
 # Parameters for DCAE instantiation
-  'dca_zone'            => 'iad4',
+  'dcae_zone'           => 'iad4',
   'dcae_state'          => 'vi',
   'openstack_tenant_id' => '',
   'openstack_username'  => '',
@@ -177,6 +177,12 @@ Vagrant.configure("2") do |config|
     end
   
     config.vm.define :dcae_controller do |dcae_controller|
+      dcae_controller.vm.hostname = 'dcae_controller'
+      dcae_controller.vm.network :private_network, ip: '192.168.50.11'
+      dcae_controller.vm.provision 'shell' do |s|
+        s.path = 'scripts/dcae_controller.sh'
+        s.env = conf
+      end
     end
   
     config.vm.define :policy do |policy|

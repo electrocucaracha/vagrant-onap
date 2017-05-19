@@ -11,6 +11,7 @@ source /var/onap/robot
 source /var/onap/vid
 source /var/onap/sdnc
 source /var/onap/portal
+source /var/onap/dcae_controller
 
 configure_dns
 create_configuration_files
@@ -22,7 +23,7 @@ install_maven
 install_docker_engine
 install_docker_compose
 
-for serv in sdc aai mso mr robot vid sdnc portal; do
+for serv in sdc aai mso mr robot vid sdnc portal dcae; do
     configure_service ${serv}_serv.sh
     init_${serv}
 done

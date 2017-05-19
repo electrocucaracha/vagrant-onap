@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -o xtrace
+
+# create_config_file() - Creates a configuration yaml file for the controller
+function create_config_file {
+    mkdir -p /opt/app/dcae-controller
+    cat > /opt/app/dcae-controller/config.yaml << EOL
+ZONE: $dcae_zone
+STATE: $dcae_state
+DCAE-VERSION: $artifacts_version
+HORIZON-URL: https://mycloud.rackspace.com/cloud/$tenant_id
+KEYSTONE-URL: https://identity.api.rackspacecloud.com/v2.0
+OPENSTACK-TENANT-ID: $tenant_id
+OPENSTACK-TENANT-NAME: OPEN-ECOMP
+OPENSTACK-REGION: $openstack_region
+OPENSTACK-PRIVATE-NETWORK: $openstack_private_network_name
+OPENSTACK-USER: $openstack_user
+OPENSTACK-PASSWORD: $openstack_password
+OPENSTACK-KEYNAME: ${key_name}${rand_str}_dcae
+OPENSTACK-PUBKEY: $pub_key
+     
+NEXUS-URL-ROOT: $nexus_repo_root
+NEXUS-USER: $nexus_username
+NEXUS-PASSWORD: $nexus_password
+NEXUS-URL-SNAPSHOTS: $nexus_url_snapshots
+NEXUS-RAWURL: $nexus_repo
+     
+DOCKER-REGISTRY: $nexus_docker_repo
+
+GIT-MR-REPO: http://gerrit.onap.org/r/dcae/demo/startup/message-router.git
+EOL
+}
+
+# install_dcae() - Function that clones and installs the DCAE controller services from source code
+function install_dcae {
+    if [ ! -d /opt/dcae-startup-vm-controller ]; then
+        git clone -b $gerrit_branch --single-branch http://gerrit.onap.org/r/dcae/demo/startup/controller.git /opt/dcae-startup-vm-controller
+    fi
+    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
+    pushd /opt/dcae-startup-vm-controller
+    bash init.sh
+    make up
+    popd
+}
+
+# init_dcae() - Function that initialize DCAE Controller services
+function init_dcae {
+    create_config_file
+    install_dcae
+}
