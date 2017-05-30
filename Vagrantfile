@@ -92,9 +92,18 @@ Vagrant.configure("2") do |config|
       end 
     end
 
+    config.vm.define :message_router do |message_router|
+      message_router.vm.hostname = 'message-router'
+      message_router.vm.network :private_network, ip: '192.168.50.4'
+      message_router.vm.provision 'shell' do |s|
+        s.path = 'scripts/message_router.sh'
+        s.env = conf
+      end
+    end
+
     config.vm.define :sdc do |sdc|
       sdc.vm.hostname = 'sdc'
-      sdc.vm.network :private_network, ip: '192.168.50.4'
+      sdc.vm.network :private_network, ip: '192.168.50.5'
       sdc.vm.provider "virtualbox" do |v|
         v.customize ["modifyvm", :id, "--memory", 4 * 1024]
         unless File.exist?(sdc_volume)
@@ -115,7 +124,7 @@ Vagrant.configure("2") do |config|
   
     config.vm.define :aai do |aai|
       aai.vm.hostname = 'aai'
-      aai.vm.network :private_network, ip: '192.168.50.5'
+      aai.vm.network :private_network, ip: '192.168.50.6'
       aai.vm.provision 'shell' do |s| 
         s.path = 'scripts/aai.sh'
         s.env = conf
@@ -124,20 +133,11 @@ Vagrant.configure("2") do |config|
   
     config.vm.define :mso do |mso|
       mso.vm.hostname = 'mso-server'
-      mso.vm.network :private_network, ip: '192.168.50.6'
+      mso.vm.network :private_network, ip: '192.168.50.7'
       mso.vm.provision 'shell' do |s| 
         s.path = 'scripts/mso.sh'
         s.env = conf
       end 
-    end
-  
-    config.vm.define :message_router do |message_router|
-      message_router.vm.hostname = 'message-router'
-      message_router.vm.network :private_network, ip: '192.168.50.7'
-      message_router.vm.provision 'shell' do |s| 
-        s.path = 'scripts/message_router.sh'
-        s.env = conf
-      end
     end
   
     config.vm.define :robot do |robot|
@@ -186,6 +186,12 @@ Vagrant.configure("2") do |config|
     end
   
     config.vm.define :policy do |policy|
+      policy.vm.hostname = 'policy'
+      policy.vm.network :private_network, ip: '192.168.50.13'
+      policy.vm.provision 'shell' do |s|
+        s.path = 'scripts/policy.sh'
+        s.env = conf
+      end
     end
   
     config.vm.define :appc do |appc|
