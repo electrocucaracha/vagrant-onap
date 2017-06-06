@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -o xtrace
+
+# install_appc() - Function that clones and installs the APPC services from source code
+function install_appc {
+    local src_folder=/opt/appc
+    clone_repo appc/deployment.git $src_folder
+    pushd $src_folder
+    install_docker_compose
+    /opt/docker/docker-compose up -d
+    popd
+}
+
+# init_appc() - Function that initialize APPC services
+function init_appc {
+    pull_openecomp_image appc-image openecomp/appc-image:latest
+    pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest 
+    install_appc
+}

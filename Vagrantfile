@@ -195,6 +195,12 @@ Vagrant.configure("2") do |config|
     end
   
     config.vm.define :appc do |appc|
+      appc.vm.hostname = 'appc'
+      appc.vm.network :private_network, ip: '192.168.50.14'
+      appc.vm.provision 'shell' do |s|
+        s.path = 'scripts/appc.sh'
+        s.env = conf
+      end
     end
 
   end
