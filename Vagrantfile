@@ -23,7 +23,8 @@ conf = {
   'openstack_password'  => '',
   'nexus_repo_root'     => 'https://nexus.onap.org',
   'nexus_url_snapshot'  => 'https://nexus.onap.org/content/repositories/snapshots',
-  'gitlab_branch'       => 'master'
+  'gitlab_branch'       => 'master',
+  'build_image'         => 'True'
 }
 
 vd_conf = ENV.fetch('VD_CONF', 'etc/settings.yaml')
@@ -53,6 +54,8 @@ Vagrant.configure("2") do |config|
   #config.vm.provision "docker"
   config.vm.synced_folder './opt', '/opt/', create: true
   config.vm.synced_folder './lib', '/var/onap/', create: true
+  config.vm.provision :file, source: '~/.gitconfig', destination: '/home/vagrant/.gitconfig' if File.exist?(ENV['HOME'] + '/.gitconfig')
+  config.vm.provision :file, source: '~/.m2/settings.xml', destination: '/home/vagrant/.m2/settings.xml' if File.exist?(ENV['HOME'] + '/.m2/settings.xml')
   config.vm.provider "virtualbox" do |v|
     v.customize ["modifyvm", :id, "--memory", 4 * 1024]
   end
