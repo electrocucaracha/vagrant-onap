@@ -88,14 +88,10 @@ function install_maven {
     fi
     install_package software-properties-common
     add-apt-repository -y ppa:andrei-pozolotin/maven3
-    install_package mave3
+    install_package maven3
 
     # Force Maven3 to use jdk8
     apt-get purge openjdk-7-jdk -y
-
-    # Configure maven repos
-    mkdir -p /home/vagrant/.m2
-    cp /var/onap/files/settings.xml /home/vagrant/.m2/settings.xml
 }
 
 # install_docker() - Download and install docker-engine 
