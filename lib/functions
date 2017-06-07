@@ -94,6 +94,15 @@ function install_maven {
     apt-get purge openjdk-7-jdk -y
 }
 
+# configure_docker_proxy() - Configures proxy in Docker from ENV
+function configure_docker_proxy {
+    # TODO: Add https_proxy and no_proxy
+    if [ -n "$http_proxy" ]
+    then
+        echo "export http_proxy=$http_proxy" > /etc/default/docker
+    fi
+}
+
 # install_docker() - Download and install docker-engine 
 function install_docker {
     install_package software-properties-common
@@ -104,6 +113,8 @@ function install_docker {
         stable"
     install_package docker-ce
     service docker start
+    configure_docker_proxy
+    service docker restart
 }
 
 # install_docker_compose() - Download and install docker-engine 
