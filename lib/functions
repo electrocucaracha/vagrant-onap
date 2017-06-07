@@ -112,9 +112,8 @@ function install_docker {
         $(lsb_release -cs) \
         stable"
     install_package docker-ce
-    service docker start
     configure_docker_proxy
-    service docker restart
+    service docker start
 }
 
 # install_docker_compose() - Download and install docker-engine 
