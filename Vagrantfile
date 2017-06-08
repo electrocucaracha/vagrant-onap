@@ -54,8 +54,8 @@ Vagrant.configure("2") do |config|
   #config.vm.provision "docker"
   config.vm.synced_folder './opt', '/opt/', create: true
   config.vm.synced_folder './lib', '/var/onap/', create: true
-  config.vm.provision :file, source: '~/.gitconfig', destination: '/home/vagrant/.gitconfig' if File.exist?(ENV['HOME'] + '/.gitconfig')
-  config.vm.provision :file, source: '~/.m2/settings.xml', destination: '/home/vagrant/.m2/settings.xml' if File.exist?(ENV['HOME'] + '/.m2/settings.xml')
+  config.vm.synced_folder '~/.m2', '/root/.m2/', create: true
+
   config.vm.provider "virtualbox" do |v|
     v.customize ["modifyvm", :id, "--memory", 4 * 1024]
   end
