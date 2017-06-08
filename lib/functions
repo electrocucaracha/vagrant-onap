@@ -34,17 +34,40 @@ function pull_openecomp_image {
     fi
 }
 
+# git_timed() - git can sometimes get itself infinitely stuck with transient network
+# errors or other issues with the remote end.  This wraps git in a
+# timeout/retry loop and is intended to watch over non-local git
+# processes that might hang.
+function git_timed {
+    local count=0
+    local timeout=0
+
+    install_package git
+    until timeout -s SIGINT ${timeout} git "$@"; do
+        # 124 is timeout(1)'s special return code when it reached the
+        # timeout; otherwise assume fatal failure
+        if [[ $? -ne 124 ]]; then
+            exit 1
+        fi
+
+        count=$(($count + 1))
+        if [ $count -eq 3 ]; then
+            exit 1
+        fi
+        sleep 5
+    done
+}
+
 # clone_repo() - Clone Git repository into specific folder
 function clone_repo {
     local repo_url=https://git.onap.org/
     local repo=$1
     local dest_folder=$2
     if [ ! -d $2 ]; then
-        install_package git
-        git clone -b $gerrit_branch --single-branch ${repo_url}${repo} $dest_folder
+        git_timed clone -b $gerrit_branch --single-branch ${repo_url}${repo} $dest_folder
     else
         pushd $dest_folder
-        git pull
+        git_timed pull
         popd
     fi
 }
