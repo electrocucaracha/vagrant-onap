@@ -123,9 +123,11 @@ function install_maven {
 
 # configure_docker_proxy() - Configures proxy in Docker from ENV
 function configure_docker_proxy {
-    # TODO: Add https_proxy and no_proxy
     if [ -n "$http_proxy" ]; then
-        echo "export http_proxy=$http_proxy" > /etc/default/docker
+        echo "export http_proxy=$http_proxy" >> /etc/default/docker
+    fi
+    if [ -n "$https_proxy" ]; then
+        echo "export https_proxy=$https_proxy" >> /etc/default/docker
     fi
 }
 
