@@ -4,9 +4,19 @@ set -o xtrace
 
 # install_sdnc() -  Download and install SDNC services from source code
 function install_sdnc {
-    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
     local src_folder=/opt/sdnc/oam
-    clone_repo sdnc/oam /opt/sdnc/oam
+    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
+    clone_repo sdnc/oam $src_folder
+    if [[ "$build_image" == "True" ]]; then
+        build_docker_image $src_folder/installation/ubuntu
+        build_docker_image $src_folder/installation/sdnc
+        build_docker_image $src_folder/installation/admportal
+        build_docker_image $src_folder/installation/dgbuilder
+    else
+        pull_openecomp_image sdnc-image openecomp/sdnc-image:latest
+        pull_openecomp_image admportal-sdnc-image openecomp/admportal-sdnc-image:latest
+        pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest
+    fi
     pushd $src_folder/installation/src/main/yaml
     install_docker_compose
     /opt/docker/docker-compose up -d
@@ -15,8 +25,5 @@ function install_sdnc {
 
 # init_sdnc() - Function that initialize SDNC services
 function init_sdnc {
-    pull_openecomp_image sdnc-image openecomp/sdnc-image:latest
-    pull_openecomp_image admportal-sdnc-image openecomp/admportal-sdnc-image:latest
-    pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest
     install_sdnc
 }

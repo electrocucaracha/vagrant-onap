@@ -42,6 +42,10 @@ function clone_repo {
     if [ ! -d $2 ]; then
         install_package git
         git clone -b $gerrit_branch --single-branch ${repo_url}${repo} $dest_folder
+    else
+        pushd $dest_folder
+        git pull
+        popd
     fi  
 }
 
@@ -101,6 +105,16 @@ function configure_docker_proxy {
     then
         echo "export http_proxy=$http_proxy" > /etc/default/docker
     fi
+}
+
+# build_docker_image() - Build Docker container image from source code
+function build_docker_image {
+    local src_folder=$1
+    is_package_installed maven || install_maven
+    is_package_installed docker-ce || install_docker
+    pushd $src_folder
+    mvn clean package docker:build
+    popd
 }
 
 # install_docker() - Download and install docker-engine 
