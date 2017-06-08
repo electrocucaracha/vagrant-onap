@@ -15,6 +15,6 @@ function install_appc {
 # init_appc() - Function that initialize APPC services
 function init_appc {
     pull_openecomp_image appc-image openecomp/appc-image:latest
-    pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest 
+    pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest
     install_appc
 }

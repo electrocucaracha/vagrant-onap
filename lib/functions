@@ -46,7 +46,7 @@ function clone_repo {
         pushd $dest_folder
         git pull
         popd
-    fi  
+    fi
 }
 
 # install_dev_tools() - Install basic dependencies
@@ -101,8 +101,7 @@ function install_maven {
 # configure_docker_proxy() - Configures proxy in Docker from ENV
 function configure_docker_proxy {
     # TODO: Add https_proxy and no_proxy
-    if [ -n "$http_proxy" ]
-    then
+    if [ -n "$http_proxy" ]; then
         echo "export http_proxy=$http_proxy" > /etc/default/docker
     fi
 }

@@ -84,14 +84,14 @@ function wait_for_sdc {
     if [[ -s "/opt/config/sdc_ip_addr.txt" ]]; then
         SDC_IP_ADDR=$(cat /opt/config/sdc_ip_addr.txt)
     else
-	SDC_IP_ADDR="10.0.3.1"
+        SDC_IP_ADDR="10.0.3.1"
     fi
 
      # Run Health Check against SDC and verify that all five components are up
-     RES=$(curl http://$SDC_IP_ADDR:8181/sdc1/rest/healthCheck | grep -c "OK")
-     while [[ $RES -lt 5 ]]; do
-         RES=$(curl http://$SDC_IP_ADDR:8181/sdc1/rest/healthCheck | grep -c "OK")
-     done
+    RES=$(curl http://$SDC_IP_ADDR:8181/sdc1/rest/healthCheck | grep -c "OK")
+    while [[ $RES -lt 5 ]]; do
+        RES=$(curl http://$SDC_IP_ADDR:8181/sdc1/rest/healthCheck | grep -c "OK")
+    done
 }
 
 # init_aai() - Function that initialize AAI services
