@@ -156,7 +156,7 @@ function install_docker {
         stable"
     install_package docker-ce
     configure_docker_proxy
-    service docker start
+    service docker restart
 }
 
 # install_docker_compose() - Download and install docker-engine 

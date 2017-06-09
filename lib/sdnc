@@ -14,6 +14,7 @@ function build_sdnc_images {
 
 # install_sdnc() -  Download and install SDNC services from source code
 function install_sdnc {
+    install_package unzip
     local src_folder=/opt/sdnc/oam
     export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
     clone_repo sdnc/oam $src_folder
