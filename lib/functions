@@ -123,10 +123,10 @@ function install_maven {
 
 # configure_docker_proxy() - Configures proxy in Docker from ENV
 function configure_docker_proxy {
-    if [ -n "$http_proxy" ]; then
+    if [ $http_proxy ]; then
         echo "export http_proxy=$http_proxy" >> /etc/default/docker
     fi
-    if [ -n "$https_proxy" ]; then
+    if [ $https_proxy ]; then
         echo "export https_proxy=$https_proxy" >> /etc/default/docker
     fi
 }
@@ -138,11 +138,17 @@ function build_docker_image {
     is_package_installed maven || install_maven
     is_package_installed docker-ce || install_docker
     pushd $src_folder
+    local mvn_docker="mvn clean package docker:build"
     if [ $profile ]; then
-        mvn clean package docker:build -P $profile
-    else
-        mvn clean package docker:build
+        mvn_docker+=" -P $profile"
     fi
+    if [ $http_proxy ]; then
+        mvn_docker+=" -Ddocker.buildArg.http_proxy=$http_proxy"
+    fi
+    if [ $https_proxy ]; then
+        mvn_docker+=" -Ddocker.buildArg.https_proxy=$https_proxy"
+    fi
+    eval $mvn_docker
     popd
 }
 
