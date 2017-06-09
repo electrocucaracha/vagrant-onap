@@ -23,16 +23,6 @@ function build_ajsc_aai_image {
     popd
 }
 
-# build_model_loader_image() - Build model-loader container image from source code
-function build_model_loader_image {
-    local src_folder=/opt/aai/src/model-loader
-    is_package_installed maven || install_maven
-    clone_repo aai/model-loader $src_folder
-    pushd $src_folder
-    mvn clean package docker:build
-    popd
-}
-
 # install_hbase() - Install HBase Service
 function install_hbase {
     docker rm -f hbase
@@ -55,6 +45,7 @@ EOL
 
 # install_model_loader() Install Model Loader 
 function install_model_loader {
+    local src_folder=/opt/aai/model-loader/
     cat <<EOL > /etc/model-loader.conf
 DISTR_CLIENT_ASDC_ADDRESS=${SDC_ADDRESS:-c2.vm1.sdc.simpledemo.openecomp.org:8443}
 DISTR_CLIENT_CONSUMER_GROUP=${UEB_CONSUMER_GROUP:-SDCGroup}
@@ -71,7 +62,8 @@ EOL
 
     docker rm -f model-loader-service
     if [[ "$build_image" == "True" ]]; then
-        build_model_loader_image
+        clone_repo aai/model-loader $src_folder
+        build_docker_image $src_folder
         docker run --env-file /etc/model-loader.conf model-loader
     else
         pull_openecomp_image model-loader

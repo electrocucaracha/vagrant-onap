@@ -29,7 +29,7 @@ function pull_openecomp_image {
     local tag=$2
     docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
     docker pull $nexus_docker_repo/openecomp/${image}:$docker_version
-    if [ -n ${tag+x} ]; then
+    if [ ${tag} ]; then
         docker tag $nexus_docker_repo/openecomp/${image}:$docker_version $tag
     fi
 }
@@ -110,7 +110,7 @@ function install_java {
 
 # install_maven() - Install maven binaries
 function install_maven {
-    if ! is_package_installed java; then
+    if ! is_package_installed openjdk-8-jdk; then
         install_java
     fi
     install_package software-properties-common
@@ -134,10 +134,15 @@ function configure_docker_proxy {
 # build_docker_image() - Build Docker container image from source code
 function build_docker_image {
     local src_folder=$1
+    local profile=$2
     is_package_installed maven || install_maven
     is_package_installed docker-ce || install_docker
     pushd $src_folder
-    mvn clean package docker:build
+    if [ $profile ]; then
+        mvn clean package docker:build -P $profile
+    else
+        mvn clean package docker:build
+    fi
     popd
 }
 
