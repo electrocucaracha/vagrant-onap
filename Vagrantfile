@@ -34,7 +34,7 @@ if File.exist?(vd_conf)
   conf.update(user_conf)
 end
 
-deploy_mode = ENV.fetch('DEPLOY_MODE', 'distributed')
+deploy_mode = ENV.fetch('DEPLOY_MODE', 'individual')
 sdc_volume='vol1-sdc-data.vdi'
 
 Vagrant.configure("2") do |config|
@@ -89,7 +89,7 @@ Vagrant.configure("2") do |config|
       end
     end
 
-  when 'distributed'
+  when 'individual'
 
     config.vm.define :dns do |dns|
       dns.vm.hostname = 'dns'
