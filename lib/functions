@@ -24,7 +24,7 @@ function create_configuration_files {
 
 # pull_openecomp_image() - Pull Docker container image from a Docker Registry Hub
 function pull_openecomp_image {
-    is_package_installed docker-ce || install_docker
+    install_docker
     local image=$1
     local tag=$2
     docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
@@ -74,22 +74,20 @@ function clone_repo {
 
 # install_dev_tools() - Install basic dependencies
 function install_dev_tools {
-    apt-get update -y
-    apt-get install -y \
-        apt-transport-https \
-        ca-certificates \
-        curl
+    install_package apt-transport-https
+    install_package ca-certificates
+    install_package curl
 }
 
 # install_bind() - Install bind utils
 function install_bind {
-    apt-get update -y
-    apt-get install -y bind9 bind9utils
+    install_package bind9
+    install_package bind9utils
 }
 
 # configure_bind()- Configure bind utils
 function configure_bind {
-    is_package_installed bind9 || install_bind
+    install_bind
     mkdir /etc/bind/zones
 
     curl -k $nexus_repo/org.openecomp.demo/boot/$artifacts_version/db_simpledemo_openecomp_org -o /etc/bind/zones/db.simpledemo.openecomp.org
@@ -110,6 +108,9 @@ function install_java {
 
 # install_maven() - Install maven binaries
 function install_maven {
+    if is_package_installed maven; then
+        return
+    fi
     if ! is_package_installed openjdk-8-jdk; then
         install_java
     fi
@@ -135,8 +136,8 @@ function configure_docker_proxy {
 function build_docker_image {
     local src_folder=$1
     local profile=$2
-    is_package_installed maven || install_maven
-    is_package_installed docker-ce || install_docker
+    install_maven
+    install_docker
     pushd $src_folder
     local mvn_docker="mvn clean package docker:build"
     if [ $profile ]; then
@@ -154,6 +155,9 @@ function build_docker_image {
 
 # install_docker() - Download and install docker-engine 
 function install_docker {
+    if is_package_installed docker-ce; then
+        return
+    fi
     install_package software-properties-common
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     add-apt-repository \
@@ -181,24 +185,4 @@ function configure_service {
     curl -k $nexus_repo/org.openecomp.demo/boot/$artifacts_version/$service_script -o /etc/init.d/$service_script
     chmod +x /etc/init.d/$service_script
     update-rc.d $service_script defaults
-}
-
-# install_logging_service() - Download and configure logging service
-function install_logging_service {
-    if [ ! -d /opt/common/src/logging-service ]; then
-        git clone https://git.onap.org/aai/logging-service /opt/common/src/logging-service
-    fi
-    pushd /opt/common/src/logging-service
-    mvn install
-    popd
-}
-
-# install_sdc_client() - Download and configure SDC Distribution Client
-function install_sdc_client {
-    if [ ! -d /opt/sdc/src/sdc-distribution-client ]; then
-        git clone https://git.onap.org/sdc/sdc-distribution-client /opt/sdc/src/sdc-distribution-client
-    fi
-    pushd /opt/sdc/src/sdc-distribution-client
-    mvn install
-    popd
 }

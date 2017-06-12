@@ -2,6 +2,14 @@
 
 set -o xtrace
 
+# update_repos() - Function that updates linux repositories
+function update_repos {
+    if [ -f /var/onap/files/sources.list ]; then
+        cp /var/onap/files/sources.list /etc/apt/sources.list
+    fi
+    apt-get update -y
+}
+
 # is_package_installed() - Function to tell if a package is installed
 function is_package_installed {
     if [[ -z "$@" ]]; then
@@ -14,7 +22,7 @@ function is_package_installed {
 function install_package {
     local package=$1
     if ! is_package_installed $package; then
-        apt-get update -y
+        update_repos
         apt-get install -y $package
     fi
 }

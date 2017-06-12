@@ -84,7 +84,8 @@ Vagrant.configure("2") do |config|
         v.storage :file, path: sdc_volume, bus: 'sata', device: 'vdb', size: '2G'
       end
       all_in_one.vm.provision 'shell' do |s|
-        s.path = 'scripts/all_in_one.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['mr', 'sdc', 'aai', 'mso', 'robot', 'vid', 'sdnc', 'portal', 'dcae', 'policy', 'appc']
         s.env = conf
       end
     end
@@ -102,7 +103,7 @@ Vagrant.configure("2") do |config|
         v.nested = true
       end
       dns.vm.provision 'shell' do |s|
-        s.path = 'scripts/dns.sh'
+        s.path = 'postinstall.sh'
         s.env = conf
       end 
     end
@@ -111,7 +112,8 @@ Vagrant.configure("2") do |config|
       message_router.vm.hostname = 'message-router'
       message_router.vm.network :private_network, ip: '192.168.50.4'
       message_router.vm.provision 'shell' do |s|
-        s.path = 'scripts/message_router.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['mr']
         s.env = conf
       end
     end
@@ -132,7 +134,8 @@ Vagrant.configure("2") do |config|
         v.storage :file, path: sdc_volume, bus: 'sata', device: 'vdb', size: '2G'
       end
       sdc.vm.provision 'shell' do |s|
-        s.path = 'scripts/sdc.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['sdc']
         s.env = conf
       end
     end
@@ -141,7 +144,8 @@ Vagrant.configure("2") do |config|
       aai.vm.hostname = 'aai'
       aai.vm.network :private_network, ip: '192.168.50.6'
       aai.vm.provision 'shell' do |s| 
-        s.path = 'scripts/aai.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['aai']
         s.env = conf
       end 
     end
@@ -150,7 +154,8 @@ Vagrant.configure("2") do |config|
       mso.vm.hostname = 'mso-server'
       mso.vm.network :private_network, ip: '192.168.50.7'
       mso.vm.provision 'shell' do |s| 
-        s.path = 'scripts/mso.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['mso']
         s.env = conf
       end 
     end
@@ -159,7 +164,8 @@ Vagrant.configure("2") do |config|
       robot.vm.hostname = 'robot'
       robot.vm.network :private_network, ip: '192.168.50.8'
       robot.vm.provision 'shell' do |s|
-        s.path = 'scripts/robot.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['robot']
         s.env = conf
       end
     end
@@ -168,7 +174,8 @@ Vagrant.configure("2") do |config|
       vid.vm.hostname = 'vid'
       vid.vm.network :private_network, ip: '192.168.50.9'
       vid.vm.provision 'shell' do |s|
-        s.path = 'scripts/vid.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['vid']
         s.env = conf
       end
     end
@@ -177,7 +184,8 @@ Vagrant.configure("2") do |config|
       sdnc.vm.hostname = 'sdnc'
       sdnc.vm.network :private_network, ip: '192.168.50.10'
       sdnc.vm.provision 'shell' do |s|
-        s.path = 'scripts/sdnc.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['sdnc']
         s.env = conf
       end
     end
@@ -186,7 +194,8 @@ Vagrant.configure("2") do |config|
       portal.vm.hostname = 'portal'
       portal.vm.network :private_network, ip: '192.168.50.11'
       portal.vm.provision 'shell' do |s|
-        s.path = 'scripts/portal.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['portal']
         s.env = conf
       end
     end
@@ -195,7 +204,8 @@ Vagrant.configure("2") do |config|
       dcae_controller.vm.hostname = 'dcae'
       dcae_controller.vm.network :private_network, ip: '192.168.50.12'
       dcae_controller.vm.provision 'shell' do |s|
-        s.path = 'scripts/dcae_controller.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['dcae']
         s.env = conf
       end
     end
@@ -204,7 +214,8 @@ Vagrant.configure("2") do |config|
       policy.vm.hostname = 'policy'
       policy.vm.network :private_network, ip: '192.168.50.13'
       policy.vm.provision 'shell' do |s|
-        s.path = 'scripts/policy.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['policy']
         s.env = conf
       end
     end
@@ -213,7 +224,8 @@ Vagrant.configure("2") do |config|
       appc.vm.hostname = 'appc'
       appc.vm.network :private_network, ip: '192.168.50.14'
       appc.vm.provision 'shell' do |s|
-        s.path = 'scripts/appc.sh'
+        s.path = 'postinstall.sh'
+        s.args = ['appc']
         s.env = conf
       end
     end
