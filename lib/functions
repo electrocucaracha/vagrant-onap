@@ -139,17 +139,31 @@ function build_docker_image {
     install_maven
     install_docker
     pushd $src_folder
+
+    # Cleanup external repo
+    sed -i 's|${docker.push.registry}/||g' pom.xml
     local mvn_docker="mvn clean package docker:build"
     if [ $profile ]; then
         mvn_docker+=" -P $profile"
     fi
     if [ $http_proxy ]; then
         mvn_docker+=" -Ddocker.buildArg.http_proxy=$http_proxy"
+        mvn_docker+=" -Ddocker.buildArg.HTTP_PROXY=$http_proxy"
     fi
     if [ $https_proxy ]; then
         mvn_docker+=" -Ddocker.buildArg.https_proxy=$https_proxy"
+        mvn_docker+=" -Ddocker.buildArg.HTTPS_PROXY=$https_proxy"
     fi
     eval $mvn_docker
+    popd
+}
+
+# compile_src() - Function that compiles the java source code thru maven
+function compile_src {
+    local src_folder=$1
+    install_maven
+    pushd $src_folder
+    mvn clean install -DskipTests
     popd
 }
 
