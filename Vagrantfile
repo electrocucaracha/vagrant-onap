@@ -13,7 +13,7 @@ conf = {
   'dmaap_topic'         => 'AUTO',
   'artifacts_version'   => '1.0.0',
   'docker_version'      => '1.0-STAGING-latest',
-  'gerrit_branch'       => 'release-1.0.0',
+  'gerrit_branch'       => 'master',
 # Parameters for DCAE instantiation
   'dcae_zone'           => 'iad4',
   'dcae_state'          => 'vi',
