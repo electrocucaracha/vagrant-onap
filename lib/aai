@@ -13,16 +13,6 @@ function pull_hbase_image {
     docker pull $nexus_docker_repo/aaidocker/aai-hbase-${hbase_version}
 }
 
-# build_ajsc_aai_image() - Build AJSC AAI image from source code
-function build_ajsc_aai_image {
-    local src_folder=/opt/aai/src/aai-service
-    is_package_installed maven || install_maven
-    clone_repo aai/aai-service $src_folder
-    pushd $src_folder
-    mvn -N -P runAjsc
-    popd
-}
-
 # install_hbase() - Install HBase Service
 function install_hbase {
     docker rm -f hbase
