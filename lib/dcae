@@ -59,6 +59,11 @@ function compile_docker_image {
 
 # install_dcae() - Function that clones and installs the DCAE controller services from source code
 function install_dcae {
+    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
+    local src_folder=/opt/dcae-startup-vm-controller
+    clone_repo dcae/demo/startup/controller $src_folder
+    pushd $src_folder
+    install_docker_compose
     if [[ "$build_image" == "True" ]]; then
         install_docker
         src_folder=/opt/dcae
@@ -77,14 +82,17 @@ function install_dcae {
         compile_src $src_folder/dcae-inventory
         build_docker_image $src_folder/dcae-inventory
         asserts_image dcae-inventory
+
+        dcae_image=`docker images | grep dcae-controller | awk '{print $1 ":" $2}'`
+        sed -i "s|DOCKER-REGISTRY/openecomp/dcae-controller:DCAE-VERSION|$dcae_image|g" docker-compose.yml
+        sed -i "s|MTU|$MTU|g" docker-compose.yml
+        /opt/docker/docker-compose up -d
+    else
+        bash init.sh
+        install_package make
+        make up
     fi
 
-    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
-    local src_folder=/opt/dcae-startup-vm-controller
-    clone_repo dcae/demo/startup/controller $src_folder
-    pushd $src_folder
-    bash init.sh
-    make up
     popd
 }
 

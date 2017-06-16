@@ -161,9 +161,11 @@ function build_docker_image {
 # compile_src() - Function that compiles the java source code thru maven
 function compile_src {
     local src_folder=$1
-    install_maven
     pushd $src_folder
-    mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dadditionalparam=-Xdoclint:none
+    if [ -f pom.xml ]; then
+        install_maven
+        mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dadditionalparam=-Xdoclint:none
+    fi
     popd
 }
 
