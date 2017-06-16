@@ -2,6 +2,9 @@
 
 set -o xtrace
 
+source /var/onap/functions
+source /var/onap/asserts
+
 # create_config_file() - Creates a configuration yaml file for the controller
 function create_config_file {
     mkdir -p /opt/app/dcae-controller
@@ -32,8 +35,50 @@ GIT-MR-REPO: http://gerrit.onap.org/r/dcae/demo/startup/message-router.git
 EOL
 }
 
+# compile_docker_image() - Function that clones, compiles and build a Docker image
+function compile_docker_image {
+    local repo=$1
+    local src_folder=$2
+    local name=$3
+    clone_repo dcae/dmaapbc $src_folder
+    compile_src $src_folder
+    pushd $src_folder
+    # TODO(electrocucaracha) Workaround for dmmapb images
+    sed -i '/LocalKey/d' Dockerfile
+    local docker_build="docker build -t $name -f ./Dockerfile ."
+    if [ $http_proxy ]; then
+        docker_build+=" --build-arg http_proxy=$http_proxy"
+    fi
+    if [ $https_proxy ]; then
+        docker_build+=" --build-arg https_proxy=$https_proxy"
+    fi
+    eval $docker_build
+    asserts_image $name
+    popd
+}
+
 # install_dcae() - Function that clones and installs the DCAE controller services from source code
 function install_dcae {
+    if [[ "$build_image" == "True" ]]; then
+        install_docker
+        src_folder=/opt/dcae
+
+        compile_docker_image dcae/dmaapb $src_folder/dmaapbc openecomp/dcae-dmaapbc
+        compile_docker_image dcae/orch-dispatcher $src_folder/orch-dispatcher dcae/orch-dispatcher
+
+        clone_repo dcae/demo $src_folder/demo
+        compile_src $src_folder/demo
+        pushd $src_folder/demo
+        bash dcae-demo-controller/src/main/docker-build/build.sh
+        asserts_image dcae-controller
+        popd
+
+        clone_repo dcae/dcae-inventory $src_folder/dcae-inventory
+        compile_src $src_folder/dcae-inventory
+        build_docker_image $src_folder/dcae-inventory
+        asserts_image dcae-inventory
+    fi
+
     export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
     local src_folder=/opt/dcae-startup-vm-controller
     clone_repo dcae/demo/startup/controller $src_folder

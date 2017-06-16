@@ -200,10 +200,10 @@ Vagrant.configure("2") do |config|
       end
     end
   
-    config.vm.define :dcae_controller do |dcae_controller|
-      dcae_controller.vm.hostname = 'dcae'
-      dcae_controller.vm.network :private_network, ip: '192.168.50.12'
-      dcae_controller.vm.provision 'shell' do |s|
+    config.vm.define :dcae do |dcae|
+      dcae.vm.hostname = 'dcae'
+      dcae.vm.network :private_network, ip: '192.168.50.12'
+      dcae.vm.provision 'shell' do |s|
         s.path = 'postinstall.sh'
         s.args = ['dcae']
         s.env = conf
