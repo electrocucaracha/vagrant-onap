@@ -13,46 +13,44 @@ function install_mariadb {
 
 # install_portal() - Function that pulls and install the source code of Portal
 function install_portal {
-
-if [[ "$build_image" == "True" ]]; then
-    # Build locally
+    local src_folder=/opt/portal
+    clone_repo portal $src_folder
     install_docker
-    install_maven
     docker rm -f ecompdb_portal
     docker rm -f 1610-1
-    clone_repo portal /opt/portal
-    clone_repo ecompsdkos /opt/portal/ecompsdkos
-    clone_repo "ui/dmaapbc" /opt/portal/dmaapbc
-    pushd /opt/portal/deliveries
-    chmod +x *.sh
-    bash run.sh
-    popd
-else
-    pull_openecomp_image portaldb ecompdb:portal
-    pull_openecomp_image portalapps ep:1610-1
-    clone_repo portal /opt/portal
+    if [[ "$build_image" == "True" ]]; then
+        # Build locally
+        install_maven
 
-    chmod +x /opt/portal/deliveries/new_start.sh
-    chmod +x /opt/portal/deliveries/new_stop.sh
-    chmod +x /opt/portal/deliveries/dbstart.sh
-    mkdir -p /PROJECT/OpenSource/UbuntuEP/logs
-    unzip -o /opt/portal/deliveries/etc.zip -d /PROJECT/OpenSource/UbuntuEP/
+        clone_repo ecompsdkos $src_folder/ecompsdkos
+        clone_repo "ui/dmaapbc" $src_folder/dmaapbc
+        pushd $src_folder/deliveries
+        chmod +x *.sh
+        bash run.sh
+        popd
+    else
+        pull_openecomp_image portaldb ecompdb:portal
+        pull_openecomp_image portalapps ep:1610-1
 
-    docker rm -f ecompdb_portal
-    docker rm -f 1610-1
+        chmod +x $src_folder/deliveries/new_start.sh
+        chmod +x $src_folder/deliveries/new_stop.sh
+        chmod +x $src_folder/deliveries/dbstart.sh
+        mkdir -p /PROJECT/OpenSource/UbuntuEP/logs
+        install_package unzip
+        unzip -o $src_folder/deliveries/etc.zip -d /PROJECT/OpenSource/UbuntuEP/
 
-    bash /opt/portal/deliveries/dbstart.sh
-    bash /opt/portal/deliveries/new_start.sh
+        bash $src_folder/deliveries/dbstart.sh
+        bash $src_folder/deliveries/new_start.sh
 
-    sleep 180
+        sleep 180
 
-    if [ ! -e /opt/config/boot.txt ]; then
-        IP_ADDRESS=$(ifconfig eth0 | grep "inet addr" | tr -s ' ' | cut -d' ' -f3 | cut -d':' -f2)
-        install_package mysql-client
-        mysql -u root -p'Aa123456' -h $IP_ADDRESS < /opt/portal/deliveries/Apps_Users_OnBoarding_Script.sql
-        echo "yes" > /opt/config/boot.txt
+        if [ ! -e /opt/config/boot.txt ]; then
+            IP_ADDRESS=$(ifconfig eth0 | grep "inet addr" | tr -s ' ' | cut -d' ' -f3 | cut -d':' -f2)
+            install_package mysql-client
+            mysql -u root -p'Aa123456' -h $IP_ADDRESS < $src_folder/deliveries/Apps_Users_OnBoarding_Script.sql
+            echo "yes" > /opt/config/boot.txt
+        fi
     fi
-fi
 }
 
 # init_portal() - Function that initialize Portal services
