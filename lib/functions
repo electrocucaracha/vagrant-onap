@@ -163,7 +163,7 @@ function compile_src {
     local src_folder=$1
     install_maven
     pushd $src_folder
-    mvn clean install -DskipTests
+    mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dadditionalparam=-Xdoclint:none
     popd
 }
 
