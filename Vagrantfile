@@ -76,7 +76,7 @@ Vagrant.configure("2") do |config|
         unless File.exist?(sdc_volume)
            v.customize ['createhd', '--filename', sdc_volume, '--size', 20 * 1024]
         end
-        v.customize ['storageattach', :id, '--storagectl', 'SATA', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', sdc_volume]
+        v.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', sdc_volume]
       end
       all_in_one.vm.provider "libvirt" do |v|
         v.memory = 12 * 1024
