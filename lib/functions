@@ -147,12 +147,20 @@ function build_docker_image {
         mvn_docker+=" -P $profile"
     fi
     if [ $http_proxy ]; then
-        mvn_docker+=" -Ddocker.buildArg.http_proxy=$http_proxy"
-        mvn_docker+=" -Ddocker.buildArg.HTTP_PROXY=$http_proxy"
+        if ! grep -ql "docker.buildArg.http_proxy" pom.xml ; then
+            mvn_docker+=" -Ddocker.buildArg.http_proxy=$http_proxy"
+        fi
+        if ! grep -ql "docker.buildArg.HTTP_PROXY" pom.xml ; then
+            mvn_docker+=" -Ddocker.buildArg.HTTP_PROXY=$http_proxy"
+        fi
     fi
     if [ $https_proxy ]; then
-        mvn_docker+=" -Ddocker.buildArg.https_proxy=$https_proxy"
-        mvn_docker+=" -Ddocker.buildArg.HTTPS_PROXY=$https_proxy"
+        if ! grep -ql "docker.buildArg.https_proxy" pom.xml ; then
+            mvn_docker+=" -Ddocker.buildArg.https_proxy=$https_proxy"
+        fi
+        if ! grep -ql "docker.buildArg.HTTPS_PROXY" pom.xml ; then
+            mvn_docker+=" -Ddocker.buildArg.HTTPS_PROXY=$https_proxy"
+        fi
     fi
     eval $mvn_docker
     popd
