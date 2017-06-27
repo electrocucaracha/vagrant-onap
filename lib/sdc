@@ -2,6 +2,8 @@
 
 set -o xtrace
 
+source /var/onap/asserts
+
 # mount_external_partition() - Create partition and mount the external volume
 function mount_external_partition {
     cat <<EOL > /tmp/asdc_ext_volume_partitions.txt
@@ -52,7 +54,10 @@ function install_sdc {
     clone_repo sdc $src_folder
     if [[ "$build_image" == "True" ]]; then
         compile_src $src_folder
-        build_docker_image $src_folder/sdc-os-chef
+        build_docker_image $src_folder/sdc-os-chef docker
+        for image in backend frontend elasticsearch kibana cassandra sanity; do
+            asserts_image openecomp/sdc-$image
+        done
     fi
     cp $src_folder/sdc-os-chef/environments/Template.json /data/environments
     cp $src_folder/sdc-os-chef/scripts/docker_run.sh /data/scripts
