@@ -2,6 +2,8 @@
 
 set -o xtrace
 
+source /var/onap/asserts
+
 # install_message_router() - Downloads and configure message router source code
 function install_message_router {
     local src_folder=/opt/dcae/message-router
@@ -9,6 +11,9 @@ function install_message_router {
     pushd $src_folder
     is_package_installed docker-ce || install_docker
     bash deploy.sh
+    asserts_image wurstmeister/zookeeper
+    # Cannot assert for kafka since docker-compose generates a default name when building image
+    asserts_image attos/dmaap
     popd
 }
 
