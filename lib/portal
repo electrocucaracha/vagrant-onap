@@ -3,6 +3,7 @@
 set -o xtrace
 
 source /var/onap/functions
+source /var/onap/asserts
 
 # install_mariadb() - Pull and create a MariaDB container
 function install_mariadb {
@@ -26,8 +27,14 @@ function install_portal {
         clone_repo "ui/dmaapbc" $src_folder/dmaapbc
         pushd $src_folder/deliveries
         chmod +x *.sh
+        export MVN=$(which mvn)
+        export GLOBAL_SETTINGS_FILE=/usr/share/maven3/conf/settings.xml
+        export SETTINGS_FILE=$HOME/.m2/settings.xml
         bash run.sh
         popd
+        for image in openecomp/portalapps openecomp/portaldb widget-ms; do
+            asserts_image $image
+        done
     else
         pull_openecomp_image portaldb ecompdb:portal
         pull_openecomp_image portalapps ep:1610-1
