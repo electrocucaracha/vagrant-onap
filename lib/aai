@@ -3,6 +3,7 @@
 set -o xtrace
 
 source /var/onap/functions
+source /var/onap/asserts
 
 hbase_version=1.2.3
 
@@ -22,6 +23,7 @@ function install_hbase {
 
 # install_ajsc() - Install ASJC Java service container
 function install_ajsc_aai {
+    local src_folder=/opt/aai/aai-service
     cat <<EOL > /etc/ajsc-aai.conf
 AAI_REPO_PATH=r/aai
 AAI_CHEF_ENV=simpledemo
@@ -29,7 +31,15 @@ AAI_CHEF_LOC=/var/chef/aai-data/environments
 docker_gitbranch=master
 EOL
     docker rm -f aai-service
-    pull_openecomp_image ajsc-aai
+    if [[ "$build_image" == "True" ]]; then
+        clone_repo aai/aai-service $src_folder
+        build_docker_image $src_folder/ajsc-aai
+    else
+        pull_openecomp_image ajsc-aai
+    fi
+
+    asserts_image openecomp/ajsc-aai
+
     docker run --env-file /etc/ajsc-aai.conf --name=aai-service --net=host -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt -it -d $nexus_docker_repo/openecomp/ajsc-aai:$docker_version
 }
 
@@ -50,15 +60,19 @@ APP_SERVER_KEYSTORE_PASSWORD=OBF:1i9a1u2a1unz1lr61wn51wn11lss1unz1u301i6o
 APP_SERVER_AUTH_PASSWORD=${APP_PASSWORD:-OBF:1qvu1v2h1sov1sar1wfw1j7j1wg21saj1sov1v1x1qxw}
 EOL
 
+    ARGS=""
+
     docker rm -f model-loader-service
     if [[ "$build_image" == "True" ]]; then
         clone_repo aai/model-loader $src_folder
         build_docker_image $src_folder
-        docker run --env-file /etc/model-loader.conf model-loader
+        ARGS+="--env-file /etc/model-loader.conf model-loader"
     else
         pull_openecomp_image model-loader
-        docker run --name=model-loader-service -it -d --env-file /etc/model-loader.conf $nexus_docker_repo/openecomp/model-loader:$docker_version
+        ARGS+="--name=model-loader-service -it -d --env-file /etc/model-loader.conf $nexus_docker_repo/openecomp/model-loader:$docker_version"
     fi
+    asserts_image openecomp/model-loader
+    docker run ${ARGS}
 }
 
 # wait_for_sdc() - Function that determines if SDC is up and running
