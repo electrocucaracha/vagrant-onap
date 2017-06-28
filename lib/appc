@@ -3,6 +3,7 @@
 set -o xtrace
 
 source /var/onap/sdnc
+source /var/onap/asserts
 
 # install_appc() - Function that clones and installs the APPC services from source code
 function install_appc {
@@ -11,6 +12,7 @@ function install_appc {
     if [[ "$build_image" == "True" ]]; then
         build_sdnc_images
         build_docker_image $src_folder/deployment/installation/appc docker
+        asserts_image openecomp/appc-image
     else
         pull_openecomp_image appc-image openecomp/appc-image:latest
         pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest

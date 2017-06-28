@@ -3,6 +3,7 @@
 set -o xtrace
 
 source /var/onap/functions
+source /var/onap/asserts
 
 # install_policy() - Function that clones and installs the Policy services from source code
 function install_policy {
@@ -13,6 +14,9 @@ function install_policy {
         install_docker
         pushd $src_folder
         bash docker_build.sh
+        for image in policy-os policy-nexus policy-db policy-base policy-drools policy-pe; do
+            asserts_image policy/$image
+        done
         popd
     else
         pull_onap_image policy/policy-db onap/policy/policy-db:latest
