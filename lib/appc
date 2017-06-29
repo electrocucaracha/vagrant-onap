@@ -11,7 +11,7 @@ function install_appc {
     clone_repo appc/deployment $src_folder
     if [[ "$build_image" == "True" ]]; then
         build_sdnc_images
-        build_docker_image $src_folder/deployment/installation/appc docker
+        build_docker_image $src_folder/installation/appc docker
         asserts_image openecomp/appc-image
     else
         pull_openecomp_image appc-image openecomp/appc-image:latest
