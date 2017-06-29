@@ -13,9 +13,9 @@ function install_policy {
         compile_src $src_folder
         install_docker
         pushd $src_folder
-        bash docker_build.sh
-        for image in policy-os policy-nexus policy-db policy-base policy-drools policy-pe; do
-            asserts_image policy/$image
+        bash docker_verify.sh
+        for image in os nexus db base drools pe; do
+            asserts_image onap/policy/policy-$image
         done
         popd
     else
