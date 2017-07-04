@@ -31,6 +31,8 @@ function install_portal {
         export GLOBAL_SETTINGS_FILE=/usr/share/maven3/conf/settings.xml
         export SETTINGS_FILE=$HOME/.m2/settings.xml
         bash run.sh
+        compile_src $src_folder/ecomp-portal-widget-ms
+        build_docker_image $src_folder/ecomp-portal-widget-ms
     else
         pull_openecomp_image portaldb ecompdb:portal
         pull_openecomp_image portalapps ep:1610-1
