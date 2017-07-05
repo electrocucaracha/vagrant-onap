@@ -24,7 +24,8 @@ conf = {
   'nexus_repo_root'     => 'https://nexus.onap.org',
   'nexus_url_snapshot'  => 'https://nexus.onap.org/content/repositories/snapshots',
   'gitlab_branch'       => 'master',
-  'build_image'         => 'True'
+  'build_image'         => 'True',
+  'odl_version'         => '0.5.3-Boron-SR3'
 }
 
 vd_conf = ENV.fetch('VD_CONF', 'etc/settings.yaml')
