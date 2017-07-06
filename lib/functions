@@ -210,3 +210,23 @@ function configure_service {
     chmod +x /etc/init.d/$service_script
     update-rc.d $service_script defaults
 }
+
+# Install OpenDayLight SDN controller - Download and install ODL
+function install_ODL {
+    if [ ! -d /opt/opendaylight/current ]; then
+        mkdir -p /opt/opendaylight/
+        wget "https://nexus.opendaylight.org/content/repositories/public/org/opendaylight/integration/distribution-karaf/"$odl_version"/distribution-karaf-"$odl_version".tar.gz" -P /opt/
+        tar xvf "/opt/distribution-karaf-"$odl_version".tar.gz" -C /opt/
+        mv "/opt/distribution-karaf-"$odl_version /opt/opendaylight/current
+        rm -rf "/opt/distribution-karaf-"$odl_version".tar.gz"
+    fi
+}
+
+# Start OpenDayLight SDN controleer - Start OpenDayLight
+function start_ODL {
+    if [ -d /opt/opendaylight ]; then
+        /opt/opendaylight/current/bin/start
+        sleep 180
+        /opt/opendaylight/current/bin/client feature:install odl-dlux-core odl-dluxapps-topology odl-restconf odl-l2switch-switch
+    fi
+}
