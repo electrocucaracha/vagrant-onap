@@ -177,6 +177,21 @@ function compile_src {
     popd
 }
 
+# install_nodejs() - Download and install NodeJS
+function install_nodejs {
+    if is_package_installed nodejs; then
+        return
+    fi
+    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+    install_package nodejs
+}
+
+# install_npm() - Install NodeJS Package Manager
+function install_npm {
+    install_nodejs
+    sudo npm install npm -g
+}
+
 # install_docker() - Download and install docker-engine 
 function install_docker {
     if is_package_installed docker-ce; then
