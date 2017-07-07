@@ -240,6 +240,7 @@ function install_ODL {
 # Start OpenDayLight SDN controleer - Start OpenDayLight
 function start_ODL {
     if [ -d /opt/opendaylight ]; then
+        export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre
         /opt/opendaylight/current/bin/start
         sleep 180
         /opt/opendaylight/current/bin/client feature:install odl-dlux-core odl-dluxapps-topology odl-restconf odl-l2switch-switch

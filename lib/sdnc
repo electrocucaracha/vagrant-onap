@@ -7,8 +7,6 @@ source /var/onap/asserts
 # build_sdnc_images() - Builds SDNC images from source code
 function build_sdnc_images {
     local src_folder=$1
-    clone_repo sdnc/oam $src_folder
-    compile_src $src_folder
 
     build_docker_image $src_folder/installation/ubuntu
     asserts_image openecomp/ubuntu-sdnc-image
@@ -27,17 +25,24 @@ function build_sdnc_images {
 # install_sdnc() -  Download and install SDNC services from source code
 function install_sdnc {
     install_package unzip
-    local src_folder=/opt/openecomp/sdnc/oam
+    local src_folder=/opt/openecomp/sdnc
     export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
-    clone_repo sdnc/oam $src_folder
+
+    for dirc in adaptors core northbound oam plugins; do
+        clone_repo sdnc/$dirc $src_folder/$dirc
+        if [[ "$compile_repo" == "True" ]]; then
+            compile_src $src_folder/$dirc
+        fi
+    done
+
     if [[ "$build_image" == "True" ]]; then
-        build_sdnc_images $src_folder
+        build_sdnc_images $src_folder/oam
     else
         pull_openecomp_image sdnc-image openecomp/sdnc-image:latest
         pull_openecomp_image admportal-sdnc-image openecomp/admportal-sdnc-image:latest
         pull_openecomp_image dgbuilder-sdnc-image openecomp/dgbuilder-sdnc-image:latest
     fi
-    pushd $src_folder/installation/src/main/yaml
+    pushd $src_folder/oam/installation/src/main/yaml
     install_docker_compose
     /opt/docker/docker-compose up -d
     popd
