@@ -177,7 +177,9 @@ function compile_src {
     pushd $src_folder
     if [ -f pom.xml ]; then
         install_maven
+        set -o errexit
         mvn clean install -U -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dadditionalparam=-Xdoclint:none
+        set +o errexit
     fi
     popd
 }
