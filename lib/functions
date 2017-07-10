@@ -4,6 +4,11 @@ set -o xtrace
 
 source /var/onap/commons
 
+# export_env_vars() - Export environment variables
+function export_env_vars {
+    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' |sort -n | head -1)
+}
+
 # configure_dns() - DNS/GW IP address configuration
 function configure_dns {
     echo "nameserver 10.0.0.1" >> /etc/resolvconf/resolv.conf.d/head

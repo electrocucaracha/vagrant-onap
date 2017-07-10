@@ -74,7 +74,6 @@ function install_mso_docker_config {
 EOF
     export MSO_CONFIG_UPDATES
     export MSO_DOCKER_IMAGE_VERSION=$docker_version
-    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
 
     is_package_installed docker-ce || install_docker
     install_docker_compose

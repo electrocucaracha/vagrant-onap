@@ -26,7 +26,6 @@ function build_sdnc_images {
 function install_sdnc {
     install_package unzip
     local src_folder=/opt/openecomp/sdnc
-    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
 
     for dirc in adaptors core northbound oam plugins; do
         clone_repo sdnc/$dirc $src_folder/$dirc

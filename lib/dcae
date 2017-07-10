@@ -59,7 +59,6 @@ function compile_docker_image {
 
 # install_dcae() - Function that clones and installs the DCAE controller services from source code
 function install_dcae {
-    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' | sort -n | head -1)
     local src_folder=/opt/dcae-startup-vm-controller
     clone_repo dcae/demo/startup/controller $src_folder
     pushd $src_folder
