@@ -30,6 +30,9 @@ function install_sdnc {
     for dirc in adaptors core northbound oam plugins; do
         clone_repo sdnc/$dirc $src_folder/$dirc
         if [[ "$compile_repo" == "True" ]]; then
+            if [[ "$dirc" == "core" ]]; then
+                compile_src $src_folder/$dirc/rootpom
+            fi
             compile_src $src_folder/$dirc
         fi
     done
