@@ -90,10 +90,19 @@ function wait_for_sdc {
     done
 }
 
+function clone_all_aai_repos {
+    local src_folder=/opt/aai
+    for dirc in aai-common aai-config aai-data aai-service data-router logging-service model-loader resources rest-client router-core search-data-service sparky-be sparky-fe test-config traversal; do
+        clone_repo aai/$dirc $src_folder/$dirc
+    done
+}
+
 # init_aai() - Function that initialize AAI services
 function init_aai {
     mkdir -p /opt/openecomp/aai/logs
     mkdir -p /opt/openecomp/aai/data
+
+    clone_all_aai_repos
 
     install_hbase
 

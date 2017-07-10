@@ -8,11 +8,13 @@ source /var/onap/asserts
 # install_mso() - Installation of mso images
 function install_mso {
     local src_folder=/opt/mso
-    if [[ "$build_image" == "True" ]]; then
-        clone_repo mso $src_folder
-        clone_repo mso/chef-repo $src_folder/chef-repo
-        clone_repo mso/mso-config $src_folder/mso-config
+    clone_repo mso $src_folder
 
+    for dirc in chef-repo docker-config libs mso-config; do
+        clone_repo mso/$dirc $src_folder/$dirc
+    done
+
+    if [[ "$build_image" == "True" ]]; then
         export GIT_NO_PROJECT=/opt/
         compile_src $src_folder
         build_docker_image $src_folder/packages/docker docker
@@ -24,8 +26,6 @@ function install_mso {
 
 # install_mso_docker_config() - Download and install MSO Docker configuration project
 function install_mso_docker_config {
-    local src_folder=/opt/mso/docker-config
-    clone_repo mso/docker-config $src_folder
     MSO_ENCRYPTION_KEY=$(cat /opt/mso/docker-config/encryption.key)
     echo -n "$openstack_api_key" | openssl aes-128-ecb -e -K $MSO_ENCRYPTION_KEY -nosalt | xxd -c 256 -p > /opt/config/api_key.txt
 
