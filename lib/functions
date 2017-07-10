@@ -248,6 +248,6 @@ function start_ODL {
         export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre
         /opt/opendaylight/current/bin/start
         sleep 180
-        /opt/opendaylight/current/bin/client feature:install odl-dlux-core odl-dluxapps-topology odl-restconf odl-l2switch-switch
+        /opt/opendaylight/current/bin/client feature:install odl-dlux-all
     fi
 }
