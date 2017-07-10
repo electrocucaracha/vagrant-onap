@@ -4,6 +4,27 @@ set -o xtrace
 
 source /var/onap/asserts
 
+# clone_all_sdnc_repos() - Function that clones SDNC source repo.
+function clone_all_sdnc_repos {
+    local src_folder=/opt/openecomp/sdnc
+
+    for dirc in adaptors core northbound oam plugins; do
+        clone_repo sdnc/$dirc $src_folder/$dirc
+    done
+}
+
+# compile_all_sdnc_repos() - Function that compiles SDNC source repo.
+function compile_all_sdnc_repos {
+    local src_folder=/opt/openecomp/sdnc
+
+    for dirc in adaptors core northbound oam plugins; do
+        if [[ "$dirc" == "core" ]]; then
+                compile_src $src_folder/$dirc/rootpom
+        fi
+        compile_src $src_folder/$dirc
+    done
+}
+
 # build_sdnc_images() - Builds SDNC images from source code
 function build_sdnc_images {
     local src_folder=$1
@@ -27,15 +48,10 @@ function install_sdnc {
     install_package unzip
     local src_folder=/opt/openecomp/sdnc
 
-    for dirc in adaptors core northbound oam plugins; do
-        clone_repo sdnc/$dirc $src_folder/$dirc
-        if [[ "$compile_repo" == "True" ]]; then
-            if [[ "$dirc" == "core" ]]; then
-                compile_src $src_folder/$dirc/rootpom
-            fi
-            compile_src $src_folder/$dirc
-        fi
-    done
+    clone_all_sdnc_repos
+    if [[ "$compile_repo" == "True" ]]; then
+        compile_all_sdnc_repos
+    fi
 
     if [[ "$build_image" == "True" ]]; then
         build_sdnc_images $src_folder/oam

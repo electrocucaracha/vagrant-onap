@@ -7,6 +7,24 @@ source /var/onap/asserts
 
 hbase_version=1.2.3
 
+# clone_all_aai_repos() - Function that clones AAI source repo.
+function clone_all_aai_repos {
+    local src_folder=/opt/aai
+
+    for dirc in aai-common aai-config aai-data aai-service data-router logging-service model-loader resources rest-client router-core search-data-service sparky-be sparky-fe test-config traversal; do
+        clone_repo aai/$dirc $src_folder/$dirc
+    done
+}
+
+# compile_all_aai_repos() - Function that compiles AAI source repo.
+function compile_all_aai_repos {
+    local src_folder=/opt/aai
+
+    for dirc in aai-common aai-config aai-data aai-service data-router logging-service model-loader resources rest-client router-core search-data-service sparky-be sparky-fe test-config traversal; do
+        compile_src $src_folder/$dirc
+    done
+}
+
 # pull_hbase_image() - Pull HBase container image from a Docker Registry Hub
 function pull_hbase_image {
     is_package_installed docker-ce || install_docker
@@ -90,19 +108,15 @@ function wait_for_sdc {
     done
 }
 
-function clone_all_aai_repos {
-    local src_folder=/opt/aai
-    for dirc in aai-common aai-config aai-data aai-service data-router logging-service model-loader resources rest-client router-core search-data-service sparky-be sparky-fe test-config traversal; do
-        clone_repo aai/$dirc $src_folder/$dirc
-    done
-}
-
 # init_aai() - Function that initialize AAI services
 function init_aai {
     mkdir -p /opt/openecomp/aai/logs
     mkdir -p /opt/openecomp/aai/data
 
     clone_all_aai_repos
+    if [[ "$compile_repo" == "True" ]]; then
+        compile_all_aai_repos
+    fi
 
     install_hbase
 

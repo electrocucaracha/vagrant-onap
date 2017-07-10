@@ -57,6 +57,7 @@ function compile_docker_image {
     popd
 }
 
+# clone_all_dcae_repos() - Function that clones DCAE source repo.
 function clone_all_dcae_repos {
     local src_folder=/opt/dcae
     clone_repo dcae $src_folder
@@ -67,12 +68,28 @@ function clone_all_dcae_repos {
     done
 }
 
+# compile_all_dcae_repos() - Function that compiles DCAE source repo.
+function compile_all_dcae_repos {
+    local src_folder=/opt/dcae
+
+    for dirc in apod apod/analytics apod/buildtools apod/buildtools collectors collectors/ves controller controller/analytics dcae-inventory \
+        demo demo/startup demo/startup/aaf demo/startup/controller demo/startup/message-router dmaapbc operation operation/utils pgaas utils utils/buildtools; do
+        compile_src $src_folder/$dirc
+    done
+}
+
 
 # install_dcae() - Function that clones and installs the DCAE controller services from source code
 function install_dcae {
     local src_folder=/opt/dcae/demo/startup/controller
     pushd $src_folder
     install_docker_compose
+
+    clone_all_dcae_repos
+    if [[ "$compile_repo" == "True" ]]; then
+        compile_all_dcae_repos
+    fi
+
     if [[ "$build_image" == "True" ]]; then
         install_docker
         src_folder=/opt/dcae

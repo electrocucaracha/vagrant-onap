@@ -11,12 +11,32 @@ function pull_mariadb_image {
     docker pull $nexus_docker_repo/library/mariadb:10
 }
 
+# clone_all_vid_repos() - Function that clones VID source code.
+function clone_all_vid_repos {
+    local src_folder=/opt/vid
+
+    clone_repo vid $src_folder
+    clone_repo vid/asdcclient $src_folder/asdcclient
+}
+
+# compile_all_vid_repos() - Function that compiles VID source repo.
+function compile_all_vid_repos {
+    local src_folder=/opt/vid
+
+    compile_src $src_folder
+    compile_src $src_folder/asdcclient
+}
+
 # install_vid() - Download and configure Vid source code
 function install_vid {
     local src_folder=/opt/vid
     local vid_image=openecomp/vid
-    clone_repo vid $src_folder
-    clone_repo vid/asdcclient $src_folder/asdcclient
+
+    clone_all_vid_repos
+    if [[ "$compile_repo" == "True" ]]; then
+        compile_all_vid_repos
+    fi
+
     if [[ "$build_image" == "True" ]]; then
         compile_src $src_folder
         build_docker_image $src_folder/deliveries
