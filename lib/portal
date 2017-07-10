@@ -16,12 +16,12 @@ function install_mariadb {
 function install_portal {
     local src_folder=/opt/portal
     clone_repo portal $src_folder
+    clone_repo portal/sdk $src_folder/sdk
     install_docker
     docker rm -f ecompdb_portal
     docker rm -f 1610-1
     pushd $src_folder/deliveries
     if [[ "$build_image" == "True" ]]; then
-        # Build locally
         install_maven
 
         clone_repo ecompsdkos $src_folder/ecompsdkos
