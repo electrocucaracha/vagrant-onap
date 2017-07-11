@@ -4,6 +4,8 @@ set -o xtrace
 
 source /var/onap/asserts
 
+src_folder=/opt/vid
+
 # pull_mariadb_image() - Pull MariaDB container image from a Docker Registry Hub
 function pull_mariadb_image {
     is_package_installed docker-ce || install_docker
@@ -13,23 +15,18 @@ function pull_mariadb_image {
 
 # clone_all_vid_repos() - Function that clones VID source code.
 function clone_all_vid_repos {
-    local src_folder=/opt/vid
-
     clone_repo vid $src_folder
     clone_repo vid/asdcclient $src_folder/asdcclient
 }
 
 # compile_all_vid_repos() - Function that compiles VID source repo.
 function compile_all_vid_repos {
-    local src_folder=/opt/vid
-
     compile_src $src_folder
     compile_src $src_folder/asdcclient
 }
 
 # install_vid() - Download and configure Vid source code
 function install_vid {
-    local src_folder=/opt/vid
     local vid_image=openecomp/vid
 
     clone_all_vid_repos
