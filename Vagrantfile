@@ -29,6 +29,28 @@ conf = {
   'compile_repo'        => 'False'
 }
 
+module OS
+    def OS.windows?
+        (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
+    end
+
+    def OS.mac?
+        (/darwin/ =~ RUBY_PLATFORM) != nil
+    end
+
+    def OS.unix?
+        !OS.windows?
+    end
+
+    def OS.linux?
+        OS.unix? and not OS.mac?
+    end
+end
+
+if OS.windows?
+    puts "Vagrant launched from windows. This configuration has not fully tested."
+end
+
 vd_conf = ENV.fetch('VD_CONF', 'etc/settings.yaml')
 if File.exist?(vd_conf)
   require 'yaml'
