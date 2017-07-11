@@ -4,6 +4,8 @@ set -o xtrace
 
 source /var/onap/asserts
 
+src_folder=/opt/sdc
+
 # mount_external_partition() - Create partition and mount the external volume
 function mount_external_partition {
     cat <<EOL > /tmp/asdc_ext_volume_partitions.txt
@@ -45,10 +47,9 @@ EOL
 
 # clone_all_sdc_repos() - Function that clones SDC source repo.
 function clone_all_sdc_repos {
-    local src_folder=/opt/sdc
     clone_repo sdc $src_folder
 
-    for dirc in jtosca sdc-distribution-client sdc-titan-cassandra sdc-tosca sdc_common ; do
+    for dirc in sdc-os-chef jtosca sdc-distribution-client sdc-titan-cassandra sdc-tosca sdc_common ; do
         clone_repo sdc/$dirc $src_folder/$dirc
     done
 }
