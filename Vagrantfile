@@ -110,10 +110,10 @@ Vagrant.configure("2") do |config|
       end 
     end
 
-    config.vm.define :message_router do |message_router|
-      message_router.vm.hostname = 'message-router'
-      message_router.vm.network :private_network, ip: '192.168.50.4'
-      message_router.vm.provision 'shell' do |s|
+    config.vm.define :mr do |mr|
+      mr.vm.hostname = 'message-router'
+      mr.vm.network :private_network, ip: '192.168.50.4'
+      mr.vm.provision 'shell' do |s|
         s.path = 'postinstall.sh'
         s.args = ['mr']
         s.env = conf
