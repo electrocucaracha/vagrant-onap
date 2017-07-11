@@ -43,12 +43,23 @@ alias health='/data/scripts/docker_health.sh'
 EOL
 }
 
+# clone_all_sdc_repos() - Function that clones SDC source repo.
 function clone_all_sdc_repos {
     local src_folder=/opt/sdc
     clone_repo sdc $src_folder
 
     for dirc in jtosca sdc-distribution-client sdc-titan-cassandra sdc-tosca sdc_common ; do
         clone_repo sdc/$dirc $src_folder/$dirc
+    done
+}
+
+# compile_all_sdc_repos() - Function that compiles SDC source repo.
+function compile_all_sdc_repos {
+    local src_folder=/opt/sdc
+    clone_repo sdc $src_folder
+
+    for dirc in jtosca sdc-distribution-client sdc-titan-cassandra sdc-tosca sdc_common ; do
+        compile_src $src_folder/$dirc
     done
 }
 
@@ -59,7 +70,12 @@ function install_sdc {
     local MR_IP_ADDR='10.0.11.1'
     local RELEASE=$docker_version
     NEXUS_DOCKER_PORT=$(echo $nexus_docker_repo | cut -d':' -f2)
+
     clone_all_sdc_repos
+    if [[ "$compile_repo" == "True" ]]; then
+        compile_all_sdc_repos
+    fi
+
     if [[ "$build_image" == "True" ]]; then
         compile_src $src_folder
         build_docker_image $src_folder/sdc-os-chef docker
