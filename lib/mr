@@ -10,6 +10,7 @@ function install_message_router {
     clone_repo dcae/demo/startup/message-router $src_folder
     pushd $src_folder
     is_package_installed docker-ce || install_docker
+    install_docker_compose
     bash deploy.sh
     asserts_image wurstmeister/zookeeper
     # Cannot assert for kafka since docker-compose generates a default name when building image
