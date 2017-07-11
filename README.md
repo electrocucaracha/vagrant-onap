@@ -8,7 +8,12 @@ This vagrant project pretends to collect information about a way to deploy [ONAP
 
 * Vagrant
 * VirtualBox or Libvirt
-* Linux or MAC OS
+
+## Supported OS
+* Linux 
+* MAC OS
+* Windows is in testing 
+
 
 ## Steps for execution:
 
@@ -53,7 +58,9 @@ Windows
     setx https_proxy <proxy> /M
 
 ##### choosing vagrant provider
+in Windows on first exaction run 
 
     vagrant up --provider=virtualbox
+to use virtual box as the default provider
 the commend needs to be executed once
 
