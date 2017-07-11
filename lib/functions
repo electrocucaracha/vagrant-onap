@@ -113,7 +113,7 @@ function install_java {
 
 # install_maven() - Install maven binaries
 function install_maven {
-    if is_package_installed maven; then
+    if is_package_installed maven3; then
         return
     fi
     if ! is_package_installed openjdk-8-jdk; then
