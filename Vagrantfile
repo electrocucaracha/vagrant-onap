@@ -29,6 +29,8 @@ conf = {
   'compile_repo'        => 'False'
 }
 
+Vagrant.require_version ">= 1.8.6"
+
 module OS
     def OS.windows?
         (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
