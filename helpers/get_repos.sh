@@ -19,7 +19,7 @@ repos=(
 
 function git_clone_or_pull {
     local repo=$1
-    local folder="opt/$1"
+    local folder="../opt/$1"
     local mvn_build=$2
     if [ ! -d $folder ]; then
         git clone https://git.onap.org/$repo $folder
