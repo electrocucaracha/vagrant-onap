@@ -1,8 +1,16 @@
-# Vagrant ONAP
+# ONAP on Vagrant
 
 [![Build Status](https://api.travis-ci.org/electrocucaracha/vagrant-onap.svg?branch=master)](https://api.travis-ci.org/electrocucaracha/vagrant-onap)
 
-This vagrant project pretends to collect information about a way to deploy [ONAP project](https://www.onap.org/) into a development environment.  It was created only for didactic purposes.
+This vagrant project pretends to collect information about a way to deploy
+and build [ONAP project](https://www.onap.org/) into a development environment.
+
+### Problem Being Solved
+
++ Reduce the barrier of entry to allow new ONAP developers to ramp up on to
+active development quickly
++ Reduce the cost to the community in responding to simple environment setup
+questions faced by new developers
 
 ## Requirements:
 
@@ -10,40 +18,34 @@ This vagrant project pretends to collect information about a way to deploy [ONAP
 * VirtualBox or Libvirt
 
 ## Supported OS
+
 * Linux 
-* MAC OS
-* Windows is in testing 
+* Mac OS
+* Windows (In Progress)
 
+## Execution:
 
-## Steps for execution:
+#### deploying a single application
 
-    git clone https://github.com/electrocucaracha/vagrant-onap.git
-    cd vagrant-onap
-    vagrant up
+    vagrant up <app_name>
 
-## Destroy:
-
-    vagrant destroy
-
-## Options:
-##### deploying a single application
-    vagrant up <application name>
 current options include:
->aai
->appc
->asserts
->commons
->dcea
->mr
->mso
->policy
->portal
->robot
->sdc
->sdnc
->vid
 
-##### setting up proxy in case you are behind a fire wall
+| app_name  | description                         |
+| ----------|:-----------------------------------:|
+| aai       | Active and Available Inventory      |
+| appc      | Application Controller              |
+| dcae      | Data Collection Analytics & Events  |
+| mr        | Message Router                      |
+| mso       | Master Service Orchestrator         |
+| policy    | Policy                              |
+| portal    | Portal                              |
+| robot     | Robot                               |
+| sdc       | Service Design & Creation           |
+| sdnc      | Software Defined Network Controller |
+| vid       | Virtual Infrastructure Development  |
+
+#### setting up proxy in case you are behind a firewall
 
 add http_proxy and https_proxy to your environment variables
 
@@ -58,9 +60,19 @@ Windows
     setx https_proxy <proxy> /M
 
 ##### choosing vagrant provider
-in Windows on first exaction run 
+force VirtualBox provider
 
     vagrant up --provider=virtualbox
-to use virtual box as the default provider
-the commend needs to be executed once
 
+setup the default provider on Windows
+
+    setx VAGRANT_DEFAULT_PROVIDER=virtualbox /M
+
+## Environment variables
+
+| variable       |    description                    |
+| ---------------|:---------------------------------:|
+|``$http_proxy`` |  URL for corporate proxy          |
+|``$https_proxy``|  URL for corporate proxy          |
+|``$no_proxy``   |  Bypass URLs                      |
+|``$DEPLOY_MODE``|  all-in-one, individual or testing|
