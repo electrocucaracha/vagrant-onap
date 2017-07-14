@@ -4,22 +4,21 @@ set -o xtrace
 
 source /var/onap/asserts
 
+src_folder=/opt/openecomp/sdnc
+sdnc_repos=("core" "adaptors" "northbound" "plugins" "oam")
+
 # clone_all_sdnc_repos() - Function that clones SDNC source repo.
 function clone_all_sdnc_repos {
-    local src_folder=/opt/openecomp/sdnc
-
-    for dirc in adaptors core northbound oam plugins; do
+    for dirc in ${sdnc_repos[@]}; do
         clone_repo sdnc/$dirc $src_folder/$dirc
     done
 }
 
 # compile_all_sdnc_repos() - Function that compiles SDNC source repo.
 function compile_all_sdnc_repos {
-    local src_folder=/opt/openecomp/sdnc
-
-    for dirc in adaptors core northbound oam plugins; do
+    for dirc in ${sdnc_repos[@]}; do
         if [[ "$dirc" == "core" ]]; then
-                compile_src $src_folder/$dirc/rootpom
+            compile_src $src_folder/core/rootpom
         fi
         compile_src $src_folder/$dirc
     done
@@ -27,26 +26,25 @@ function compile_all_sdnc_repos {
 
 # build_sdnc_images() - Builds SDNC images from source code
 function build_sdnc_images {
-    local src_folder=$1
+    local folder=$1
 
-    build_docker_image $src_folder/installation/ubuntu
+    build_docker_image $folder/installation/ubuntu
     asserts_image openecomp/ubuntu-sdnc-image
 
     /var/lib/dpkg/info/ca-certificates-java.postinst configure
-    build_docker_image $src_folder/installation/sdnc
+    build_docker_image $folder/installation/sdnc
     asserts_image openecomp/sdnc-image
 
-    build_docker_image $src_folder/installation/admportal
+    build_docker_image $folder/installation/admportal
     asserts_image openecomp/admportal-sdnc-image
 
-    build_docker_image $src_folder/installation/dgbuilder
+    build_docker_image $folder/installation/dgbuilder
     asserts_image openecomp/dgbuilder-sdnc-image
 }
 
 # install_sdnc() -  Download and install SDNC services from source code
 function install_sdnc {
     install_package unzip
-    local src_folder=/opt/openecomp/sdnc
 
     clone_all_sdnc_repos
     if [[ "$compile_repo" == "True" ]]; then
@@ -54,6 +52,10 @@ function install_sdnc {
     fi
 
     if [[ "$build_image" == "True" ]]; then
+        # The OAM code depends on all the SDNC repos which should be downloaded and compiled first
+        if [[ "$compile_repo" == "False" ]]; then
+            compile_all_sdnc_repos
+        fi
         build_sdnc_images $src_folder/oam
     else
         pull_openecomp_image sdnc-image openecomp/sdnc-image:latest
