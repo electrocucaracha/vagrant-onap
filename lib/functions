@@ -4,6 +4,8 @@ set -o xtrace
 
 source /var/onap/commons
 
+mvn_conf_file=/root/.m2/settings.xml
+
 # export_env_vars() - Export environment variables
 function export_env_vars {
     export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' |sort -n | head -1)
@@ -111,9 +113,8 @@ function install_java {
     install_package openjdk-8-jdk
 }
 
-# configure_maven() - This function creates a maven configuration file in case that doesn't exist
-function configure_maven {
-    local mvn_conf_file=/root/.m2/settings.xml
+# _configure_maven() - This function creates a maven configuration file in case that doesn't exist
+function _configure_maven {
     local proxies_start="<!--"
     local proxies="|"
     local proxies_end="-->"
@@ -163,7 +164,7 @@ function install_maven {
     # Force Maven3 to use jdk8
     apt-get purge openjdk-7-jdk -y
 
-    configure_maven
+    _configure_maven
 }
 
 # configure_docker_proxy() - Configures proxy in Docker from ENV
@@ -216,9 +217,7 @@ function compile_src {
     pushd $src_folder
     if [ -f pom.xml ]; then
         install_maven
-        set -o errexit
         mvn clean install -U -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dadditionalparam=-Xdoclint:none
-        set +o errexit
     fi
     popd
 }

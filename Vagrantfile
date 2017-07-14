@@ -256,5 +256,24 @@ Vagrant.configure("2") do |config|
       end
     end
 
+  when 'testing'
+
+    config.vm.define :testing do |testing|
+      testing.vm.hostname = 'testing'
+      testing.vm.network :private_network, ip: '192.168.50.3'
+      testing.vm.synced_folder './tests', '/var/onap_tests/', create: true
+      testing.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", 2 * 1024]
+      end
+      testing.vm.provider "libvirt" do |v|
+        v.memory = 2 * 1024
+        v.nested = true
+      end
+      testing.vm.provision 'shell' do |s|
+        s.path = 'unit_testing.sh'
+        s.env = conf
+      end
+    end
+
   end
 end

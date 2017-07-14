@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source /var/onap/asserts
+source /var/onap/functions
+
+# test_install_maven () - Verify the correct installation and configuration of maven
+function test_install_maven {
+    install_maven
+    asserts_installed_package maven3
+    asserts_installed_package openjdk-8-jdk
+    asserts_file_exist $mvn_conf_file
+}
+
+test_install_maven
