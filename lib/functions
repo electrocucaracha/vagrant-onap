@@ -111,6 +111,43 @@ function install_java {
     install_package openjdk-8-jdk
 }
 
+# configure_maven() - This function creates a maven configuration file in case that doesn't exist
+function configure_maven {
+    local mvn_conf_file=/root/.m2/settings.xml
+    local proxies_start="<!--"
+    local proxies="|"
+    local proxies_end="-->"
+    local mvn_http=""
+    local mvn_https=""
+
+    if [ $http_proxy ] | [ $https_proxy ]; then
+        proxies_start=""
+        proxies=""
+        proxies_end=""
+        if [ $http_proxy ]; then
+            proxy_domain=`echo $http_proxy | awk -F/ '{print $3}' | awk -F: '{print $1}'`
+            proxy_port=`echo $http_proxy | awk -F/ '{print $3}' | awk -F: '{print $2}'`
+            mvn_http="<proxy>\n      <id>http</id>\n      <active>true</active>\n      <protocol>http</protocol>\n      <host>$proxy_domain</host>\n      <port>$proxy_port</port>\n      <nonProxyHosts>${no_proxy}</nonProxyHosts>\n    </proxy>"
+        fi
+        if [ $https_proxy ]; then
+            proxy_domain=`echo $https_proxy | awk -F/ '{print $3}' | awk -F: '{print $1}'`
+            proxy_port=`echo $https_proxy | awk -F/ '{print $3}' | awk -F: '{print $2}'`
+            mvn_https="<proxy>\n      <id>https</id>\n      <active>true</active>\n      <protocol>https</protocol>\n      <host>$proxy_domain</host>\n      <port>$proxy_port</port>\n      <nonProxyHosts>${no_proxy}</nonProxyHosts>\n    </proxy>"
+        fi
+    fi
+
+    if [ ! -f $mvn_conf_file ]; then
+        cp /var/onap/files/settings.template $mvn_conf_file
+        sed -e "
+            s|%PROXIES_START%|$proxies_start|g;
+            s|%PROXIES%|$proxies|g;
+            s|%HTTP_PROXY%|$mvn_http|g;
+            s|%HTTPS_PROXY%|$mvn_https|g;
+            s|%PROXIES_END%|$proxies_end|g
+        " -i $mvn_conf_file
+    fi
+}
+
 # install_maven() - Install maven binaries
 function install_maven {
     if is_package_installed maven3; then
@@ -125,6 +162,8 @@ function install_maven {
 
     # Force Maven3 to use jdk8
     apt-get purge openjdk-7-jdk -y
+
+    configure_maven
 }
 
 # configure_docker_proxy() - Configures proxy in Docker from ENV
