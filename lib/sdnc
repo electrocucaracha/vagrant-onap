@@ -70,7 +70,6 @@ function install_sdnc {
 
 # init_sdnc() - Function that initialize SDNC services
 function init_sdnc {
-    install_ODL
     start_ODL
     install_sdnc
 }
