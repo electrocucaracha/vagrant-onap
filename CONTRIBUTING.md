@@ -14,5 +14,4 @@ The _tests_ folder contains scripts that ensure the proper implementation of the
 functions created on _lib_ folder.  In order to execute all the Unit Tests
 defined for this project, you must run the following commands:
 
-    $ export DEPLOY_MODE=testing
     $ ./helpers/cleanup.sh testing
