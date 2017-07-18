@@ -44,6 +44,7 @@ current options include:
 | sdc       | Service Design & Creation           |
 | sdnc      | Software Defined Network Controller |
 | vid       | Virtual Infrastructure Development  |
+| vfc       | Virtual Function Controller (WIP)   |
 
 #### setting up proxy in case you are behind a firewall
 

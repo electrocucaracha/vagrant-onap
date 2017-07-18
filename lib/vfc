@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -o xtrace
+
+src_folder=/opt/vfc
+vfc_repos=("gvnfm/vnflcm" "gvnfm/vnfmgr" "gvnfm/vnfres" "nfvo/catalog" "nfvo/driver/ems" "nfvo/driver/sfc" \
+            "nfvo/driver/vnfm/gvnfm" "nfvo/driver/vnfm/svnfm" "nfvo/lcm" "nfvo/resmanagement" "nfvo/wfengine")
+
+# clone_all_vfc_repos() - Function that clones VF-C source repo.
+function clone_all_vfc_repos {
+    for dirc in ${vfc_repos[@]}; do
+        clone_repo vfc/$dirc $src_folder/$dirc
+    done
+}
+
+# compile_all_vfc_repos() - Function that compiles VF-C source repo.
+function compile_all_sdnc_repos {
+    # TODO(sshank): Need to figure out what needs to be done for Java and Python since this project has both.
+    echo ""
+}
+
+# install_vfc() - Download and install vfc service from source code
+function install_vfc {
+    clone_all_vfc_repos
+    if [[ "$compile_repo" == "True" ]]; then
+        compile_all_sdnc_repos
+    fi
+
+    # TODO(sshank): Need to add further installation steps.
+}
+
+# init_vfc() - Function that initialize VF-C services
+function init_vfc {
+    install_vfc
+}
