@@ -12,12 +12,18 @@ function create_configuration_files {
     echo $docker_version > /opt/config/docker_version.txt
 }
 
+# TODO(electrocucaracha): Determine how to use this behind a proxy
+# docker_openecomp_login() - Login to OpenECOMP Docker Hub
+function docker_openecomp_login {
+    install_docker
+    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
+}
+
 # pull_openecomp_image() - Pull Docker container image from a Docker Registry Hub
 function pull_openecomp_image {
-    install_docker
     local image=$1
     local tag=$2
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
+    docker_openecomp_login
     pull_docker_image $nexus_docker_repo/openecomp/${image}:$docker_version $tag
     docker logout
 }

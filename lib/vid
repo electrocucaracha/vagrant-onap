@@ -2,14 +2,14 @@
 
 set -o xtrace
 
+source /var/onap/functions
 source /var/onap/asserts
 
 src_folder=/opt/vid
 
 # pull_mariadb_image() - Pull MariaDB container image from a Docker Registry Hub
 function pull_mariadb_image {
-    is_package_installed docker-ce || install_docker
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
+    docker_openecomp_login
     docker pull $nexus_docker_repo/library/mariadb:10
 }
 

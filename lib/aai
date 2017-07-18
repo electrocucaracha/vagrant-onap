@@ -27,8 +27,7 @@ function compile_all_aai_repos {
 
 # pull_hbase_image() - Pull HBase container image from a Docker Registry Hub
 function pull_hbase_image {
-    is_package_installed docker-ce || install_docker
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
+    docker_openecomp_login
     docker pull $nexus_docker_repo/aaidocker/aai-hbase-${hbase_version}
 }
 

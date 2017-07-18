@@ -2,9 +2,10 @@
 
 set -o xtrace
 
+source /var/onap/functions
 source /var/onap/asserts
 
-src_folder=/opt/sdc
+src_folder=$git_src_folder/sdc
 
 # mount_external_partition() - Create partition and mount the external volume
 function mount_external_partition {
@@ -95,8 +96,7 @@ function install_sdc {
     sed -i "s/\"ueb_url_list\":.*/\"ueb_url_list\": \""$MR_IP_ADDR","$MR_IP_ADDR"\",/g" /data/environments/$ENV_NAME.json
     sed -i "s/\"fqdn\":.*/\"fqdn\": [\""$MR_IP_ADDR"\", \""$MR_IP_ADDR"\"]/g" /data/environments/$ENV_NAME.json
 
-    is_package_installed docker-ce || install_docker
-    docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
+    docker_openecomp_login
     bash /data/scripts/docker_run.sh -e $ENV_NAME -r $RELEASE -p $NEXUS_DOCKER_PORT
 }
 

@@ -12,7 +12,7 @@ covered_functions=(
 
 # TODO(electrocucaracha): Remove/Modify functions that doesn't support proxy settings
 non_proxy_functions=(
-"pull_openecomp_image"
+"docker_openecomp_login" "pull_openecomp_image"
 )
 
 # test_create_configuration_files() - Verify the creation of a configuration files
@@ -26,6 +26,11 @@ function test_create_configuration_files {
     asserts_file_exist /opt/config/tenant_id.txt
     asserts_file_exist /opt/config/dmaap_topic.txt
     asserts_file_exist /opt/config/docker_version.txt
+}
+
+# test_docker_openecomp_login() - Verify the proper login to OpenECOMP Docker Hub
+function test_docker_openecomp_login {
+    docker_openecomp_login
 }
 
 # test_pull_openecomp_image() - Verify the addition of a OpenECOMP container image
@@ -85,7 +90,7 @@ function test_install_nodejs {
     install_nodejs
 
     asserts_installed_package nodejs
-    asserts_installed_package npm
+    asserts_file_exist /usr/bin/npm
 }
 
 # test_install_docker() - Verify the correct installation of Docker
