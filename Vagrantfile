@@ -111,7 +111,7 @@ Vagrant.configure("2") do |config|
       end
       all_in_one.vm.provision 'shell' do |s|
         s.path = 'postinstall.sh'
-        s.args = ['mr', 'sdc', 'aai', 'mso', 'robot', 'vid', 'sdnc', 'portal', 'dcae', 'policy', 'appc']
+        s.args = ['mr', 'sdc', 'aai', 'mso', 'robot', 'vid', 'sdnc', 'portal', 'dcae', 'policy', 'appc', 'vfc']
         s.env = conf
       end
     end
@@ -252,6 +252,16 @@ Vagrant.configure("2") do |config|
       appc.vm.provision 'shell' do |s|
         s.path = 'postinstall.sh'
         s.args = ['appc']
+        s.env = conf
+      end
+    end
+
+    config.vm.define :vfc do |vfc|
+      vfc.vm.hostname = 'vfc'
+      vfc.vm.network :private_network, ip: '192.168.50.15'
+      vfc.vm.provision 'shell' do |s|
+        s.path = 'postinstall.sh'
+        s.args = ['vfc']
         s.env = conf
       end
     end

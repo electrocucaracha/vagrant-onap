@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source /var/onap/vfc
+source /var/onap/asserts
+
+covered_functions=(
+"clone_all_vfc_repos"
+)
+
+# test_clone_all_vfc_repos() - Verify cloning and pulling source code from repositories
+function test_clone_all_vfc_repos {
+    # TODO(sshank)
+    echo ""
+}
+
+for func in ${covered_functions[@]}; do
+    test_$func
+    echo "test_$func passed.."
+done
