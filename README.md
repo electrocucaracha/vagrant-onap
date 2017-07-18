@@ -7,21 +7,22 @@ and build [ONAP project](https://www.onap.org/) into a development environment.
 
 ### Problem Being Solved
 
-+ Reduce the barrier of entry to allow new ONAP developers to ramp up on to
+* Reduce the barrier of entry to allow new ONAP developers to ramp up on to
 active development quickly
-+ Reduce the cost to the community in responding to simple environment setup
+* Reduce the cost to the community in responding to simple environment setup
 questions faced by new developers
 
-## Requirements:
+---
 
-* Vagrant
-* VirtualBox or Libvirt
+| Component        | Requirement                           |
+|------------------|---------------------------------------|
+| Vagrant          | >= 1.8.6                              |
+| Hypervisor       | VirtualBox or Libvirt                 |
+| Operating System | Linux, Mac OS or Windows(In Progress) |
+| Hard Disk        | > 8 GB of free disk                   |
+| Memory           | > 12 GB                               |
 
-## Supported OS
-
-* Linux 
-* Mac OS
-* Windows (In Progress)
+---
 
 ## Execution:
 
@@ -32,7 +33,7 @@ questions faced by new developers
 current options include:
 
 | app_name  | description                         |
-| ----------|:-----------------------------------:|
+|:---------:|-------------------------------------|
 | aai       | Active and Available Inventory      |
 | appc      | Application Controller              |
 | dcae      | Data Collection Analytics & Events  |
@@ -70,9 +71,18 @@ setup the default provider on Windows
 
 ## Environment variables
 
-| variable       |    description                    |
-| ---------------|:---------------------------------:|
-|``$http_proxy`` |  URL for corporate proxy          |
-|``$https_proxy``|  URL for corporate proxy          |
-|``$no_proxy``   |  Bypass URLs                      |
-|``$DEPLOY_MODE``|  all-in-one, individual or testing|
+| Variable     | Description                      |
+|--------------|----------------------------------|
+|`$http_proxy` | URL for corporate proxy          |
+|`$https_proxy`| URL for corporate proxy          |
+|`$no_proxy`   | Bypass URLs                      |
+|`$DEPLOY_MODE`| all-in-one, individual or testing|
+
+## Contributing
+
+Bug reports and patches are most welcome.
+See the [contribution guidelines](CONTRIBUTING.md).
+
+## License
+
+Apache-2.0
