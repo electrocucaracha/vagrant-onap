@@ -6,7 +6,7 @@ source /var/onap/functions
 covered_functions=(
 "create_configuration_files" "clone_repo" "install_dev_tools"
 "configure_bind" "install_java" "install_maven" "install_nodejs"
-"install_docker" "install_docker_compose" "configure_service"
+"install_docker" "pull_docker_image" "install_docker_compose" "configure_service"
 "start_ODL" "compile_src" "build_docker_image"
 )
 
@@ -89,10 +89,18 @@ function test_install_nodejs {
 }
 
 # test_install_docker() - Verify the correct installation of Docker
-function test_install_nodejs {
+function test_install_docker {
     install_docker
 
     asserts_installed_package docker-ce
+}
+
+# test_pull_docker_image() - Verify the correct retrieve of a specific docker image
+function test_pull_docker_image {
+    local image=attos/dmaap
+    pull_docker_image $image
+
+    asserts_image $image
 }
 
 # test_install_docker_compose() - Verify the correct installation of Docker Compose tool
@@ -134,8 +142,6 @@ function test_build_docker_image {
 
     asserts_image widget-ms
 }
-
-# 
 
 for func in ${covered_functions[@]}; do
     test_$func

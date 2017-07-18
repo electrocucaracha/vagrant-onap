@@ -18,11 +18,8 @@ function pull_openecomp_image {
     local image=$1
     local tag=$2
     docker login -u $nexus_username -p $nexus_password $nexus_docker_repo
-    docker pull $nexus_docker_repo/openecomp/${image}:$docker_version
+    pull_docker_image $nexus_docker_repo/openecomp/${image}:$docker_version $tag
     docker logout
-    if [ ${tag} ]; then
-        docker tag $nexus_docker_repo/openecomp/${image}:$docker_version $tag
-    fi
 }
 
 # configure_bind()- Configure bind utils

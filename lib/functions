@@ -134,6 +134,17 @@ function install_docker {
     service docker restart
 }
 
+# pull_docker_image() - Pull Docker container image from the Public Docker Registry Hub
+function pull_docker_image {
+    install_docker
+    local image=$1
+    local tag=$2
+    docker pull ${image}
+    if [ ${tag} ]; then
+        docker tag ${image} $tag
+    fi
+}
+
 # install_docker_compose() - Download and install docker-engine 
 function install_docker_compose {
     local docker_compose_version=${1:-1.12.0}
