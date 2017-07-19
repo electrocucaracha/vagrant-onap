@@ -46,7 +46,7 @@ function configure_bind {
 function _configure_maven {
     local proxies_start="  <!--"
     local proxies="   \|"
-    local proxies_end="  -->"
+    local proxies_end="   \|-->"
     local mvn_http=""
     local mvn_https=""
 
