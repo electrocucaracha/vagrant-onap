@@ -17,6 +17,10 @@ function test_init_mr {
     asserts_image wurstmeister/zookeeper
 }
 
+if [ "$1" != '*' ]; then
+    covered_functions=$1
+fi
+
 for func in ${covered_functions[@]}; do
     test_$func
     echo "test_$func passed.."

@@ -10,8 +10,17 @@ itself.
 Unit Testing
 ============
 
-The _tests_ folder contains scripts that ensure the proper implementation of the
-functions created on _lib_ folder.  In order to execute all the Unit Tests
-defined for this project, you must run the following commands:
+The **_tests_** folder contains ~~scripts~~ _test suites_ that ensure the proper
+implementation of the _functions_ created on **_lib_** folder.  In order to
+execute the Unit Tests defined for this project, you must run the following
+command:
 
-    $ ./helpers/cleanup.sh testing
+    $ ./tools/run.sh testing [test_suite] [function]
+
+Examples
+--------
+
+    $ ./tools/run.sh testing # Executes all the Unit Tests
+    $ ./tools/run.sh testing functions # Executes all the Unit Tests of Functions Test Suite
+    $ ./tools/run.sh testing functions install_maven # Executes the install_maven Unit Test of Functions Test Suite
+    $ ./tools/run.sh testing * init_* # Executes all the Unit Tests that starts with init_

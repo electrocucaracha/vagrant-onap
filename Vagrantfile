@@ -269,6 +269,9 @@ Vagrant.configure("2") do |config|
   when 'testing'
 
     config.vm.define :testing do |testing|
+      test_suite = ENV.fetch('TEST_SUITE', '*')
+      test_case = ENV.fetch('TEST_CASE', '*')
+
       testing.vm.hostname = 'testing'
       testing.vm.network :private_network, ip: '192.168.50.3'
       testing.vm.synced_folder './tests', '/var/onap_tests/', create: true
@@ -281,6 +284,7 @@ Vagrant.configure("2") do |config|
       end
       testing.vm.provision 'shell' do |s|
         s.path = 'unit_testing.sh'
+        s.args = [test_suite, test_case]
         s.env = conf
       end
     end

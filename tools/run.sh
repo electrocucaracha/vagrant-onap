@@ -6,10 +6,12 @@ case $1 in
     "dns" | "mr" | "sdc" | "aai" | "mso" | "robot" | "vid" | "sdnc" | "portal" | "dcae" | "policy" | "appc" )
         export DEPLOY_MODE='individual' ;;
     "testing" )
-        export DEPLOY_MODE='testing' ;;
-esac
+        export DEPLOY_MODE='testing'
+        export TEST_SUITE=${2:-*}
+        export TEST_CASE=${3:-*}
 
+        rm -rf ../opt/
+        rm -rf ~/.m2/repository;;
+esac
 vagrant destroy -f $1
-rm -rf ../opt/
-rm -rf ~/.m2/repository
 vagrant up $1
