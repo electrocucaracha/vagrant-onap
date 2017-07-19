@@ -44,16 +44,16 @@ function configure_bind {
 
 # _configure_maven() - This function creates a maven configuration file in case that doesn't exist
 function _configure_maven {
-    local proxies_start="<!--"
-    local proxies="|"
-    local proxies_end="-->"
+    local proxies_start="  <!--"
+    local proxies="   \|"
+    local proxies_end="  -->"
     local mvn_http=""
     local mvn_https=""
 
     if [ $http_proxy ] | [ $https_proxy ]; then
-        proxies_start=""
-        proxies=""
-        proxies_end=""
+        proxies_start="   "
+        proxies="   "
+        proxies_end="   "
         if [ $http_proxy ]; then
             proxy_domain=`echo $http_proxy | awk -F/ '{print $3}' | awk -F: '{print $1}'`
             proxy_port=`echo $http_proxy | awk -F/ '{print $3}' | awk -F: '{print $2}'`

@@ -14,9 +14,9 @@
    | Unless otherwise specified (by system property or command-line switch), the first proxy
    | specification in this list marked as active will be used.
    |-->
-%PROXIES_START%  <proxies>
-%PROXIES%    %HTTP_PROXY%
-%PROXIES%    %HTTPS_PROXY%
+%PROXIES_START% <proxies>
+%PROXIES% %HTTP_PROXY%
+%PROXIES% %HTTPS_PROXY%
 %PROXIES_END%  </proxies>
   <!-- mirrors
    | This is a list of mirrors to be used in downloading artifacts from remote repositories.
