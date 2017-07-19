@@ -18,6 +18,7 @@ function test_init_mr {
 }
 
 if [ "$1" != '*' ]; then
+    unset covered_functions
     covered_functions=$1
 fi
 

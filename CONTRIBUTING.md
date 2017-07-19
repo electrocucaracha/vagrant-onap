@@ -23,4 +23,3 @@ Examples
     $ ./tools/run.sh testing # Executes all the Unit Tests
     $ ./tools/run.sh testing functions # Executes all the Unit Tests of Functions Test Suite
     $ ./tools/run.sh testing functions install_maven # Executes the install_maven Unit Test of Functions Test Suite
-    $ ./tools/run.sh testing * init_* # Executes all the Unit Tests that starts with init_
