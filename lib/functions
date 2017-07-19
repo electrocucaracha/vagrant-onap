@@ -118,6 +118,14 @@ function install_nodejs {
     npm install npm -g
 }
 
+# install_python() - Install Python 2.7 and other tools necessary for development.
+function install_python {
+    install_package python2.7
+    install_package python-dev
+    curl -sL https://bootstrap.pypa.io/get-pip.py | python
+    pip install tox
+}
+
 # install_docker() - Download and install docker-engine 
 function install_docker {
     if is_package_installed docker-ce; then
