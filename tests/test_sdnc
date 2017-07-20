@@ -1,7 +1,7 @@
 #!/bin/bash
 
+source /var/onap_tests/_test_base
 source /var/onap/sdnc
-source /var/onap/asserts
 
 covered_functions=(
 "clone_all_sdnc_repos" "compile_all_sdnc_repos" "get_sdnc_images"
@@ -42,8 +42,4 @@ if [ "$1" != '*' ]; then
     unset covered_functions
     covered_functions=$1
 fi
-
-for func in ${covered_functions[@]}; do
-    test_$func
-    echo "test_$func passed.."
-done
+main "${covered_functions[@]}"

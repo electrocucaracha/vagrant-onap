@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /var/onap/asserts
+source /var/onap_tests/_test_base
 source /var/onap/functions
 
 covered_functions=(
@@ -39,6 +39,8 @@ function test_pull_openecomp_image {
 
     asserts_installed_package docker-ce
     asserts_image ep:1610-1
+
+    docker rmi -f ep:1610-1
 }
 
 # test_clone_repo() - Verify cloning and pulling source code from repositories
@@ -67,6 +69,8 @@ function test_configure_bind {
     asserts_file_exist /etc/bind/zones/db.simpledemo.openecomp.org
     asserts_file_exist /etc/bind/named.conf.options
     asserts_file_exist /etc/bind/named.conf.local
+
+    rm -rf /etc/bind/
 }
 
 # test_install_java() - Verify the correct installation of java
@@ -114,6 +118,8 @@ function test_pull_docker_image {
     pull_docker_image $image
 
     asserts_image $image
+
+    docker rmi -f $image
 }
 
 # test_install_docker_compose() - Verify the correct installation of Docker Compose tool
@@ -125,9 +131,13 @@ function test_install_docker_compose {
 
 # test_configure_service() - Verify the correct configuration of a specific init service
 function test_configure_service {
-    configure_service mso
+    local service=mso
 
-    asserts_file_exist /etc/init.d/mso
+    configure_service $service
+
+    asserts_file_exist /etc/init.d/$service
+
+    rm -rf /etc/init.d/$service
 }
 
 # test_start_ODL() - Verify the installation and configuration of OpenDayLight controller
@@ -144,7 +154,6 @@ function test_compile_src {
     compile_src $git_src_folder/$repo
 
     asserts_file_exist $git_src_folder/$repo/target/asdcclient-1.0.2-SNAPSHOT.jar
-    rm -rf $git_src_folder
 }
 
 # test_build_docker_image() - Verify that a docker image is created from source code
@@ -154,14 +163,12 @@ function test_build_docker_image {
     build_docker_image $git_src_folder/portal/ecomp-portal-widget-ms
 
     asserts_image widget-ms
+
+    docker rmi -f widget-ms
 }
 
 if [ "$1" != '*' ]; then
     unset covered_functions
     covered_functions=$1
 fi
-
-for func in ${covered_functions[@]}; do
-    test_$func
-    echo "test_$func passed.."
-done
+main "${covered_functions[@]}"

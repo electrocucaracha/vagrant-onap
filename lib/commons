@@ -7,7 +7,7 @@ function update_repos {
     if [ -f /var/onap/files/sources.list ]; then
         cp /var/onap/files/sources.list /etc/apt/sources.list
     fi
-    apt-get update -y
+    apt-get update -qq -y
 }
 
 # is_package_installed() - Function to tell if a package is installed
@@ -23,6 +23,6 @@ function install_package {
     local package=$1
     if ! is_package_installed $package; then
         update_repos
-        apt-get install -y $package
+        apt-get install -y -qq $package
     fi
 }

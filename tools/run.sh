@@ -11,7 +11,7 @@ case $1 in
         export TEST_CASE=${3:-*}
 
         rm -rf ../opt/
-        rm -rf ~/.m2/repository;;
+        rm -rf ~/.m2/;;
 esac
 vagrant destroy -f $1
 vagrant up $1

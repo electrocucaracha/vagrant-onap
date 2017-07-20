@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /var/onap/asserts
+source /var/onap_tests/_test_base
 source /var/onap/mr
 
 covered_functions=(
@@ -21,8 +21,4 @@ if [ "$1" != '*' ]; then
     unset covered_functions
     covered_functions=$1
 fi
-
-for func in ${covered_functions[@]}; do
-    test_$func
-    echo "test_$func passed.."
-done
+main "${covered_functions[@]}"
