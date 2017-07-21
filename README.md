@@ -28,7 +28,13 @@ questions faced by new developers
 
 #### deploying a single application
 
-    vagrant up <app_name>
+* Windows
+
+    C:\> vagrant up <app_name>
+
+* Linux or Mac OS
+
+    $ ./tools/run.sh <app_name>
 
 current options include:
 
@@ -53,31 +59,24 @@ add http_proxy and https_proxy to your environment variables
 
 Linux or Mac
 
-    export http_proxy=<proxy>
-    export https_proxy=<proxy>
+    $ export http_proxy=<proxy>
+    $ export https_proxy=<proxy>
+    $ export no_proxy=<no_proxy_urls>
 
 Windows
 
-    setx http_proxy <proxy> /M
-    setx https_proxy <proxy> /M
+    C:\> setx http_proxy <proxy>
+    C:\> setx https_proxy <proxy>
+    C:\> setx no_proxy <no_proxy_urls>
 
 ##### choosing vagrant provider
 force VirtualBox provider
 
-    vagrant up --provider=virtualbox
+    C:\> vagrant up --provider=virtualbox
 
 setup the default provider on Windows
 
-    setx VAGRANT_DEFAULT_PROVIDER=virtualbox /M
-
-## Environment variables
-
-| Variable     | Description                      |
-|--------------|----------------------------------|
-|`$http_proxy` | URL for corporate proxy          |
-|`$https_proxy`| URL for corporate proxy          |
-|`$no_proxy`   | Bypass URLs                      |
-|`$DEPLOY_MODE`| all-in-one, individual or testing|
+    C:\> setx VAGRANT_DEFAULT_PROVIDER=virtualbox
 
 ## Contributing
 
