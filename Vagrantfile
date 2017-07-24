@@ -31,6 +31,7 @@ conf = {
 
 Vagrant.require_version ">= 1.8.6"
 
+# Determine the OS for the host computer
 module OS
     def OS.windows?
         (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
@@ -52,6 +53,9 @@ end
 if OS.windows?
     puts "Vagrant launched from windows. This configuration has not fully tested."
 end
+
+# Determine the provider used
+provider = (ENV['VAGRANT_DEFAULT_PROVIDER'] || :virtualbox).to_sym
 
 vd_conf = ENV.fetch('VD_CONF', 'etc/settings.yaml')
 if File.exist?(vd_conf)
@@ -75,8 +79,10 @@ Vagrant.configure("2") do |config|
     config.proxy.no_proxy = ENV['no_proxy']
   end
 
-  #config.vm.box = 'sputnik13/trusty64'
   config.vm.box = 'ubuntu/trusty64'
+  if provider == :libvirt
+    config.vm.box = 'sputnik13/trusty64'
+  end
   #config.vm.provision "docker"
   config.vm.synced_folder './opt', '/opt/', create: true
   config.vm.synced_folder './lib', '/var/onap/', create: true
