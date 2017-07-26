@@ -39,6 +39,7 @@ following variables
     export OS_IMAGE=<ubuntu_cloud_image_name>
     export OS_NETWORK=<neutron_private_network>
     export OS_FLOATING_IP_POOL=<neutron_floating_ip_pool>
+    export OS_SEC_GROUP=<onap-ssh-secgroup>
 
 .. end
 

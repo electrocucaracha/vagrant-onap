@@ -118,7 +118,7 @@ Vagrant.configure("2") do |config|
     v.floating_ip_pool                 = ENV.fetch('OS_FLOATING_IP_POOL', '')
     v.floating_ip_pool_always_allocate = (ENV['OS_FLOATING_IP_ALWAYS_ALLOCATE'] == 'true')
     v.image                            = ENV.fetch('OS_IMAGE', '')
-    v.security_groups                  = ENV.fetch('OS_SEC_GROUP', '')
+    v.security_groups                  = [ENV.fetch('OS_SEC_GROUP', '')]
     v.flavor                           = 'm1.medium'
     v.networks                         = ENV.fetch('OS_NETWORK', '')
   end
