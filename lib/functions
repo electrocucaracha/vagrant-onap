@@ -140,6 +140,7 @@ function install_docker {
     install_package docker-ce
     _configure_docker_proxy
     service docker restart
+    sleep 10
 }
 
 # pull_docker_image() - Pull Docker container image from the Public Docker Registry Hub

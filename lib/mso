@@ -5,7 +5,7 @@ set -o xtrace
 source /var/onap/functions
 source /var/onap/asserts
 
-src_folder=/opt/mso
+src_folder=$git_src_folder/mso
 mso_repos=("chef-repo" "docker-config" "libs" "mso-config")
 
 # clone_all_mso_repos() - Function that clones MSO source repo.
@@ -28,11 +28,6 @@ function compile_all_mso_repos {
 
 # install_mso() - Installation of mso images
 function install_mso {
-    clone_all_mso_repos
-    if [[ "$compile_repo" == "True" ]]; then
-        compile_all_mso_repos
-    fi
-
     if [[ "$build_image" == "True" ]]; then
         export GIT_NO_PROJECT=/opt/
         compile_src $src_folder
@@ -110,6 +105,11 @@ EOF
 
 # init_mso() - Function that initialize MSO services
 function init_mso {
+    clone_all_mso_repos
+    if [[ "$compile_repo" == "True" ]]; then
+        compile_all_mso_repos
+    fi
+
     install_mso
     install_mso_docker_config
 }
