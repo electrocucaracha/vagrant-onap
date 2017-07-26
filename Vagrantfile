@@ -86,6 +86,7 @@ Vagrant.configure("2") do |config|
   end
   if provider == :openstack
     config.vm.box = nil
+    config.ssh.username = 'ubuntu'
     if not Vagrant.has_plugin?('vagrant-openstack-provider')
       system 'vagrant plugin install vagrant-openstack-provider'
       raise 'vagrant-openstack-provider was installed but it requires to execute again'
@@ -104,7 +105,6 @@ Vagrant.configure("2") do |config|
     v.nested = true
   end
   config.vm.provider :openstack do |v|
-    config.ssh.username                = 'ubuntu'
 
     v.openstack_auth_url               = ENV.fetch('OS_AUTH_URL', '')
     v.tenant_name                      = ENV.fetch('OS_TENANT_NAME', '')
