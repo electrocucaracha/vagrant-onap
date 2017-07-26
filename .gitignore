@@ -3,3 +3,6 @@
 .tox/
 opt/
 *.vdi
+lib/files/proxyrc
+lib/files/sources.list
+openrc
