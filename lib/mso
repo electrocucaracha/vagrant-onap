@@ -3,7 +3,6 @@
 set -o xtrace
 
 source /var/onap/functions
-source /var/onap/asserts
 
 src_folder=$git_src_folder/mso
 mso_repos=("chef-repo" "docker-config" "libs" "mso-config")
@@ -32,9 +31,6 @@ function install_mso {
         export GIT_NO_PROJECT=/opt/
         compile_src $src_folder
         build_docker_image $src_folder/packages/docker docker
-        for image in mso mso-arquillian wildfly ubuntu-update jacoco; do
-            asserts_image openecomp/$image
-        done
     fi
 }
 
@@ -105,9 +101,11 @@ EOF
 
 # init_mso() - Function that initialize MSO services
 function init_mso {
-    clone_all_mso_repos
-    if [[ "$compile_repo" == "True" ]]; then
-        compile_all_mso_repos
+    if [[ "$clone_repo" == "True" ]]; then
+        clone_all_mso_repos
+        if [[ "$compile_repo" == "True" ]]; then
+            compile_all_mso_repos
+        fi
     fi
 
     install_mso

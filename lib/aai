@@ -3,30 +3,104 @@
 set -o xtrace
 
 source /var/onap/functions
-source /var/onap/asserts
 
 hbase_version=1.2.3
+aai_src_folder=$git_src_folder/aai
+aai_repos=("aai-common" "aai-config" "aai-data" "aai-service" "data-router" "logging-service" "model-loader" "resources" "rest-client" "router-core" "search-data-service" "test-config" "traversal" "sparky-fe" "sparky-be")
+
+# install_hadoop() - Function that installs Hadoop
+function install_hadoop {
+    local release=titan
+    local version=1.0.0
+    local filename=$release-$version-hadoop1
+    local dest_folder=/opt/hadoop/current
+
+    if [ ! -d $dest_folder ]; then
+        curl http://s3.thinkaurelius.com/downloads/$release/$filename.zip -o /tmp/${filename}.zip
+        install_package unzip
+        mkdir -p $dest_folder
+        unzip /tmp/${filename}.zip -d $dest_folder
+        pushd $dest_folder/${filename}
+        # Change commitlog_directory and data_file_directories values (https://stackoverflow.com/a/26856246/1707651)
+        sed -i "s|db/cassandra/data|/tmp/data|g" conf/cassandra/cassandra.yaml
+        sed -i "s|db/cassandra/commitlog|/tmp/commitlog|g" conf/cassandra/cassandra.yaml
+
+        install_java
+        ./bin/titan.sh start
+        popd
+    fi
+}
+
+# install_haproxy() - Function that install HAProxy
+function install_haproxy {
+    if is_package_installed haproxy; then
+        return
+    fi
+    install_package software-properties-common
+    add-apt-repository -y ppa:vbernat/haproxy-1.7
+    install_package haproxy
+    cp /var/onap/files/haproxy.cfg /etc/haproxy/
+    cp /var/onap/files/aai.pem /etc/ssl/private/
+    chmod 640 /etc/ssl/private/aai.pem
+    chown root:ssl-cert /etc/ssl/private/aai.pem
+    mkdir /usr/local/etc/haproxy
+    #echo "127.0.0.1 localhost aai-traversal.api.simpledemo.openecomp.org aai-resources.api.simpledemo.openecomp.org" >> /etc/hosts
+
+    service haproxy restart
+}
 
 # clone_all_aai_repos() - Function that clones AAI source repo.
 function clone_all_aai_repos {
-    local src_folder=/opt/aai
-
-    for dirc in aai-common aai-config aai-data aai-service data-router logging-service model-loader resources rest-client router-core search-data-service sparky-be sparky-fe test-config traversal; do
-        clone_repo aai/$dirc $src_folder/$dirc
+    for dirc in ${aai_repos[@]}; do
+        clone_repo aai/$dirc $aai_src_folder/$dirc
     done
 }
 
-# compile_all_aai_repos() - Function that compiles AAI source repo.
-function compile_all_aai_repos {
-    local src_folder=/opt/aai
+# compile_aai_repos() - Function that compiles AAI source repo.
+function compile_aai_repos {
+    local repos=("aai-common" "resources" "logging-service" "traversal")
+    if [[ "$compile_repo" == "True" ]]; then
+        repos=("${aai_repos[@]}")
+    fi
 
-    for dirc in aai-common aai-config aai-data aai-service data-router logging-service model-loader resources rest-client router-core search-data-service sparky-be sparky-fe test-config traversal; do
-        compile_src $src_folder/$dirc
+    for dirc in ${repos[@]}; do
+        compile_src $aai_src_folder/$dirc
     done
 }
 
-# pull_hbase_image() - Pull HBase container image from a Docker Registry Hub
-function pull_hbase_image {
+# setup_titan() - Function that configures AAI services to connect to Hadoop Titan
+function setup_titan {
+    local subdirectory="bundleconfig-local/etc/appprops"
+    install_python_package crudini
+
+    for dirc in resources/aai-resources traversal/aai-traversal; do
+        for file in titan-cached.properties titan-realtime.properties; do
+            crudini --set "$aai_src_folder/$dirc/$subdirectory/$file" "" "storage.backend" "cassandra"
+            crudini --set "$aai_src_folder/$dirc/$subdirectory/$file" "" "storage.hostname" "localhost"
+        done
+    done
+
+    # Add the schema to the local isntance
+    compile_src $aai_src_folder/resources/aai-resources/
+    uninstall_packages default-jre openjdk-7-jdk openjdk-7-jre openjdk-7-jre-headless
+    pushd $aai_src_folder
+    java -DAJSC_HOME=$aai_src_folder/resources/aai-resources -DBUNDLECONFIG_DIR="bundleconfig-local" -cp aai-common/aai-core/target/aai-core-1.1.0-SNAPSHOT.jar:resources/aai-resources/target/aai-resources.jar:resources/aai-resources/target/userjars/* org.openecomp.aai.dbgen.GenTester
+    popd
+}
+
+# start_aai_microservices() - Function that starts AAI microservices
+function start_aai_microservices {
+    install_maven
+    export MAVEN_OPTS="-Xms1024m -Xmx5120m -XX:PermSize=2024m -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,address=9446,server=y,suspend=n"
+    for svc in resources traversal; do
+        pushd $aai_src_folder/resources
+        mvn -P runAjsc
+        popd
+    done
+}
+
+# _pull_hbase_image() - Pull HBase container image from a Docker Registry Hub
+function _pull_hbase_image {
     docker_openecomp_login
     docker pull $nexus_docker_repo/aaidocker/aai-hbase-${hbase_version}
 }
@@ -34,13 +108,12 @@ function pull_hbase_image {
 # install_hbase() - Install HBase Service
 function install_hbase {
     docker rm -f hbase
-    pull_hbase_image
+    _pull_hbase_image
     docker run -d --net=host --name="hbase" $nexus_docker_repo/aaidocker/aai-hbase-${hbase_version}
 }
 
 # install_ajsc() - Install ASJC Java service container
 function install_ajsc_aai {
-    local src_folder=/opt/aai/aai-service
     cat <<EOL > /etc/ajsc-aai.conf
 AAI_REPO_PATH=r/aai
 AAI_CHEF_ENV=simpledemo
@@ -49,20 +122,16 @@ docker_gitbranch=master
 EOL
     docker rm -f aai-service
     if [[ "$build_image" == "True" ]]; then
-        clone_repo aai/aai-service $src_folder
-        build_docker_image $src_folder/ajsc-aai
+        build_docker_image $aai_src_folder/aai-service/ajsc-aai
     else
         pull_openecomp_image ajsc-aai
     fi
-
-    asserts_image openecomp/ajsc-aai
 
     docker run --env-file /etc/ajsc-aai.conf --name=aai-service --net=host -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt -it -d $nexus_docker_repo/openecomp/ajsc-aai:$docker_version
 }
 
 # install_model_loader() Install Model Loader 
 function install_model_loader {
-    local src_folder=/opt/aai/model-loader/
     cat <<EOL > /etc/model-loader.conf
 DISTR_CLIENT_ASDC_ADDRESS=${SDC_ADDRESS:-c2.vm1.sdc.simpledemo.openecomp.org:8443}
 DISTR_CLIENT_CONSUMER_GROUP=${UEB_CONSUMER_GROUP:-SDCGroup}
@@ -81,19 +150,17 @@ EOL
 
     docker rm -f model-loader-service
     if [[ "$build_image" == "True" ]]; then
-        clone_repo aai/model-loader $src_folder
-        build_docker_image $src_folder
+        build_docker_image $aai_src_folder/model-loader/
         ARGS+="--env-file /etc/model-loader.conf model-loader"
     else
         pull_openecomp_image model-loader
         ARGS+="--name=model-loader-service -it -d --env-file /etc/model-loader.conf $nexus_docker_repo/openecomp/model-loader:$docker_version"
     fi
-    asserts_image openecomp/model-loader
     docker run ${ARGS}
 }
 
-# wait_for_sdc() - Function that determines if SDC is up and running
-function wait_for_sdc {
+# _wait_for_sdc() - Function that determines if SDC is up and running
+function _wait_for_sdc {
     if [[ -s "/opt/config/sdc_ip_addr.txt" ]]; then
         SDC_IP_ADDR=$(cat /opt/config/sdc_ip_addr.txt)
     else
@@ -109,13 +176,21 @@ function wait_for_sdc {
 
 # init_aai() - Function that initialize AAI services
 function init_aai {
+    install_hadoop
+    install_haproxy
+
+    if [[ "$clone_repo" == "True" ]]; then
+        clone_all_aai_repos
+        if [[ "$compile_repo" == "True" ]]; then
+            compile_aai_repos
+        fi
+    fi
+
+    setup_titan
+    #start_aai_microservices
+
     mkdir -p /opt/openecomp/aai/logs
     mkdir -p /opt/openecomp/aai/data
-
-    clone_all_aai_repos
-    if [[ "$compile_repo" == "True" ]]; then
-        compile_all_aai_repos
-    fi
 
     install_hbase
 
@@ -123,6 +198,6 @@ function init_aai {
     sleep 180
 
     install_ajsc_aai
-    wait_for_sdc
+    _wait_for_sdc
     install_model_loader
 }

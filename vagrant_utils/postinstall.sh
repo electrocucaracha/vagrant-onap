@@ -4,10 +4,8 @@ set -o xtrace
 
 source /var/onap/functions
 
-export_env_vars
 create_configuration_files
 install_dev_tools
-install_java
 configure_bind
 
 for serv in $@; do

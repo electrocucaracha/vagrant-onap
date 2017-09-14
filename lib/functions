@@ -6,13 +6,11 @@ source /var/onap/commons
 source /var/onap/_composed_functions
 source /var/onap/_onap_functions
 
+export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' |sort -n | head -1)
+export IP_ADDRESS=$(ifconfig eth0 | grep "inet addr" | tr -s ' ' | cut -d' ' -f3 | cut -d':' -f2)
+
 mvn_conf_file=/root/.m2/settings.xml
 git_src_folder=/opt
-
-# export_env_vars() - Export environment variables
-function export_env_vars {
-    export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' |sort -n | head -1)
-}
 
 # configure_dns() - DNS/GW IP address configuration
 function configure_dns {
@@ -50,7 +48,7 @@ function clone_repo {
     local repo=$1
     local dest_folder=${2:-$git_src_folder/$repo}
     if [ ! -d $dest_folder ]; then
-        _git_timed clone -b $gerrit_branch --single-branch ${repo_url}${repo} $dest_folder
+        _git_timed clone ${repo_url}${repo} $dest_folder
     else
         pushd $dest_folder
         _git_timed pull
@@ -60,22 +58,28 @@ function clone_repo {
 
 # install_dev_tools() - Install basic dependencies
 function install_dev_tools {
-    install_package apt-transport-https
-    install_package ca-certificates
-    install_package curl
+    install_packages apt-transport-https ca-certificates curl
 }
 
 # _install_bind() - Install bind utils
 function _install_bind {
-    install_package bind9
-    install_package bind9utils
+    install_packages bind9 bind9utils
 }
 
 # install_java() - Install java binaries
 function install_java {
+    if is_package_installed openjdk-8-jdk; then
+        return
+    fi
     install_package software-properties-common
     add-apt-repository -y ppa:openjdk-r/ppa
+
+    # Remove Java 7
+    uninstall_packages default-jre openjdk-7-jdk openjdk-7-jre openjdk-7-jre-headless
+
     install_package openjdk-8-jdk
+    # ca-certificates-java is not a dependency in the Oracle JDK/JRE so this must be explicitly installed.
+    /var/lib/dpkg/info/ca-certificates-java.postinst configure
 }
 
 # install_maven() - Install maven binaries
@@ -83,27 +87,28 @@ function install_maven {
     if is_package_installed maven3; then
         return
     fi
-    if ! is_package_installed openjdk-8-jdk; then
-        install_java
-    fi
+    install_java
     install_package software-properties-common
     add-apt-repository -y ppa:andrei-pozolotin/maven3
     install_package maven3
 
-    # Force Maven3 to use jdk8
-    apt-get purge openjdk-7-jdk -y
+    # Remove Java 7
+    uninstall_package openjdk-7-jdk
 
     _configure_maven
 }
 
-# _configure_docker_proxy() - Configures proxy in Docker from ENV
-function _configure_docker_proxy {
+# _configure_docker_settings() - Configures Docker settings
+function _configure_docker_settings {
     if [ $http_proxy ]; then
         echo "export http_proxy=$http_proxy" >> /etc/default/docker
     fi
     if [ $https_proxy ]; then
         echo "export https_proxy=$https_proxy" >> /etc/default/docker
     fi
+
+    echo "DOCKER_OPTS=\"-H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock\"" >> /etc/default/docker
+    usermod -a -G docker vagrant
 }
 
 # install_nodejs() - Download and install NodeJS
@@ -120,13 +125,26 @@ function install_nodejs {
 
 # install_python() - Install Python 2.7 and other tools necessary for development.
 function install_python {
-    install_package python2.7
-    install_package python-dev
-    curl -sL https://bootstrap.pypa.io/get-pip.py | python
-    pip install tox
+    install_packages python2.7 python-dev
 }
 
-# install_docker() - Download and install docker-engine 
+# _install_pip() - Install Python Package Manager
+function _install_pip {
+    install_python
+    if [ ! -f /usr/local/bin/pip ]; then
+        curl -sL https://bootstrap.pypa.io/get-pip.py | python
+    fi
+}
+
+# install_python_package() - Install a python module
+function install_python_package {
+    local python_package=$1
+
+    _install_pip
+    pip install $python_package
+}
+
+# install_docker() - Download and install docker-engine
 function install_docker {
     if is_package_installed docker-ce; then
         return
@@ -138,7 +156,7 @@ function install_docker {
         $(lsb_release -cs) \
         stable"
     install_package docker-ce
-    _configure_docker_proxy
+    _configure_docker_settings
     service docker restart
     sleep 10
 }
@@ -192,7 +210,7 @@ function compile_src {
     pushd $src_folder
     if [ -f pom.xml ]; then
         install_maven
-        mvn clean install -U -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dadditionalparam=-Xdoclint:none
+        mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dadditionalparam=-Xdoclint:none
     fi
     popd
 }

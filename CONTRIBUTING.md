@@ -12,14 +12,19 @@ Unit Testing
 
 The **_tests_** folder contains ~~scripts~~ _test suites_ that ensure the proper
 implementation of the _functions_ created on **_lib_** folder.  In order to
-execute the Unit Tests defined for this project, you must run the following
-command:
+display the Usage information you must execute the script with question mark as
+an argument like follows:
 
-    $ ./tools/run.sh testing [test_suite] [function]
+    $ ./tools/run.sh
+
+or using PowerShell
+
+    PS C:\> Set-ExecutionPolicy Bypass -Scope CurrentUser
+    PS C:\> .\tools\Run.ps1 testing -?
 
 Examples
 --------
 
-    $ ./tools/run.sh testing # Executes all the Unit Tests
-    $ ./tools/run.sh testing functions # Executes all the Unit Tests of Functions Test Suite
-    $ ./tools/run.sh testing functions install_maven # Executes the install_maven Unit Test of Functions Test Suite
+    $ ./tools/run.sh -y testing # Executes all the Unit Tests unattended mode
+    $ ./tools/run.sh -s functions testing # Executes all the Unit Tests of Functions Test Suite
+    $ ./tools/run.sh -s functions -c install_maven testing # Executes the install_maven Unit Test of Functions Test Suite

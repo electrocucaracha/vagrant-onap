@@ -25,8 +25,11 @@ conf = {
   'nexus_url_snapshot'  => 'https://nexus.onap.org/content/repositories/snapshots',
   'gitlab_branch'       => 'master',
   'build_image'         => 'True',
+  'pull_docker_image'   => 'True',
   'odl_version'         => '0.5.3-Boron-SR3',
-  'compile_repo'        => 'False'
+  'clone_repo'          => 'True',
+  'compile_repo'        => 'False',
+  'enable_oparent'      => 'True'
 }
 
 Vagrant.require_version ">= 1.8.6"
@@ -80,9 +83,18 @@ Vagrant.configure("2") do |config|
     config.proxy.no_proxy = ENV['no_proxy']
   end
 
+  if Vagrant.has_plugin?('vagrant-vbguest')
+    puts 'vagrant-vbguest auto_update feature will be disable to avoid sharing conflicts'
+    config.vbguest.auto_update = false
+  end
+
   config.vm.box = 'ubuntu/trusty64'
   if provider == :libvirt
     config.vm.box = 'sputnik13/trusty64'
+    if not Vagrant.has_plugin?('vagrant-libvirt')
+      system 'vagrant plugin install vagrant-libvirt'
+      raise 'vagrant-libvirt was installed but it requires to execute again'
+    end
   end
   if provider == :openstack
     config.vm.box = nil
@@ -147,8 +159,8 @@ Vagrant.configure("2") do |config|
         v.flavor = 'm1.xlarge'
       end
       all_in_one.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
-        s.args = ['mr', 'sdc', 'aai', 'mso', 'robot', 'vid', 'sdnc', 'portal', 'dcae', 'policy', 'appc', 'vfc']
+        s.path = 'vagrant_utils/postinstall.sh'
+        s.args = ['mr', 'sdc', 'aai', 'mso', 'robot', 'vid', 'sdnc', 'portal', 'dcae', 'policy', 'appc', 'vfc', 'ccsdk']
         s.env = conf
       end
     end
@@ -170,7 +182,7 @@ Vagrant.configure("2") do |config|
         v.flavor = 'm1.small'
       end
       dns.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.env = conf
       end 
     end
@@ -182,7 +194,7 @@ Vagrant.configure("2") do |config|
         v.server_name = 'message-router'
       end
       mr.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['mr']
         s.env = conf
       end
@@ -204,33 +216,33 @@ Vagrant.configure("2") do |config|
         v.server_name = 'sdc'
       end
       sdc.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['sdc']
         s.env = conf
       end
     end
-  
+
     config.vm.define :aai do |aai|
       aai.vm.hostname = 'aai'
       aai.vm.network :private_network, ip: '192.168.50.6'
       aai.vm.provider "openstack" do |v|
         v.server_name = 'aai'
       end
-      aai.vm.provision 'shell' do |s| 
-        s.path = 'postinstall.sh'
+      aai.vm.provision 'shell' do |s|
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['aai']
         s.env = conf
       end 
     end
-  
+
     config.vm.define :mso do |mso|
       mso.vm.hostname = 'mso'
       mso.vm.network :private_network, ip: '192.168.50.7'
       mso.vm.provider "openstack" do |v|
         v.server_name = 'mso'
       end
-      mso.vm.provision 'shell' do |s| 
-        s.path = 'postinstall.sh'
+      mso.vm.provision 'shell' do |s|
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['mso']
         s.env = conf
       end 
@@ -243,12 +255,12 @@ Vagrant.configure("2") do |config|
         v.server_name = 'robot'
       end
       robot.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['robot']
         s.env = conf
       end
     end
-  
+
     config.vm.define :vid do |vid|
       vid.vm.hostname = 'vid'
       vid.vm.network :private_network, ip: '192.168.50.9'
@@ -256,12 +268,12 @@ Vagrant.configure("2") do |config|
         v.server_name = 'vid'
       end
       vid.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['vid']
         s.env = conf
       end
     end
-  
+
     config.vm.define :sdnc do |sdnc|
       sdnc.vm.hostname = 'sdnc'
       sdnc.vm.network :private_network, ip: '192.168.50.10'
@@ -269,12 +281,12 @@ Vagrant.configure("2") do |config|
         v.server_name = 'sdnc'
       end
       sdnc.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['sdnc']
         s.env = conf
       end
     end
-  
+
     config.vm.define :portal do |portal|
       portal.vm.hostname = 'portal'
       portal.vm.network :private_network, ip: '192.168.50.11'
@@ -282,12 +294,12 @@ Vagrant.configure("2") do |config|
         v.server_name = 'portal'
       end
       portal.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['portal']
         s.env = conf
       end
     end
-  
+
     config.vm.define :dcae do |dcae|
       dcae.vm.hostname = 'dcae'
       dcae.vm.network :private_network, ip: '192.168.50.12'
@@ -295,12 +307,12 @@ Vagrant.configure("2") do |config|
         v.server_name = 'dcae'
       end
       dcae.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['dcae']
         s.env = conf
       end
     end
-  
+
     config.vm.define :policy do |policy|
       policy.vm.hostname = 'policy'
       policy.vm.network :private_network, ip: '192.168.50.13'
@@ -308,12 +320,12 @@ Vagrant.configure("2") do |config|
         v.server_name = 'policy'
       end
       policy.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['policy']
         s.env = conf
       end
     end
-  
+
     config.vm.define :appc do |appc|
       appc.vm.hostname = 'appc'
       appc.vm.network :private_network, ip: '192.168.50.14'
@@ -321,7 +333,7 @@ Vagrant.configure("2") do |config|
         v.server_name = 'appc'
       end
       appc.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['appc']
         s.env = conf
       end
@@ -333,9 +345,36 @@ Vagrant.configure("2") do |config|
       vfc.vm.provider "openstack" do |v|
         v.server_name = 'vfc'
       end
+      vfc.vm.provision 'docker'
       vfc.vm.provision 'shell' do |s|
-        s.path = 'postinstall.sh'
+        s.path = 'vagrant_utils/postinstall.sh'
         s.args = ['vfc']
+        s.env = conf
+      end
+    end
+
+    config.vm.define :multicloud do |multicloud|
+      multicloud.vm.hostname = 'multicloud'
+      multicloud.vm.network :private_network, ip: '192.168.50.16'
+      multicloud.vm.provider "openstack" do |v|
+        v.server_name = 'multicloud'
+      end
+      multicloud.vm.provision 'shell' do |s|
+        s.path = 'vagrant_utils/postinstall.sh'
+        s.args = ['multicloud']
+        s.env = conf
+      end
+    end
+
+    config.vm.define :ccsdk do |ccsdk|
+      ccsdk.vm.hostname = 'ccsdk'
+      ccsdk.vm.network :private_network, ip: '192.168.50.17'
+      ccsdk.vm.provider "openstack" do |v|
+        v.server_name = 'ccsdk'
+      end
+      ccsdk.vm.provision 'shell' do |s|
+        s.path = 'vagrant_utils/postinstall.sh'
+        s.args = ['ccsdk']
         s.env = conf
       end
     end
@@ -350,10 +389,10 @@ Vagrant.configure("2") do |config|
       testing.vm.network :private_network, ip: '192.168.50.3'
       testing.vm.synced_folder './tests', '/var/onap_tests/', create: true
       testing.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 2 * 1024]
+        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
       end
       testing.vm.provider "libvirt" do |v|
-        v.memory = 2 * 1024
+        v.memory = 4 * 1024
         v.nested = true
       end
       testing.vm.provider "openstack" do |v|
@@ -361,7 +400,7 @@ Vagrant.configure("2") do |config|
         v.flavor      = 'm1.small'
       end
       testing.vm.provision 'shell' do |s|
-        s.path = 'unit_testing.sh'
+        s.path = 'vagrant_utils/unit_testing.sh'
         s.args = [test_suite, test_case]
         s.env = conf
       end

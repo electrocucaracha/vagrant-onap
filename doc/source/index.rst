@@ -11,11 +11,13 @@ using different providers like VirtualBox, Libvirt or OpenStack.
 
     __ https://wiki.onap.org/display/DW/ONAP+on+Vagrant
 
-Advanced features
+Table of contents
 -----------------
 
 .. toctree::
    :maxdepth: 2
 
-   Advanced Features <features/index>
+   Installation Guide <install/index>
+   Known Issues <install/known_issues>
+   Advanced Features <features/features>
 
