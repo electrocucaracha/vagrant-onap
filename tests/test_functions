@@ -4,16 +4,12 @@ source /var/onap_tests/_test_base
 source /var/onap/functions
 
 covered_functions=(
-"create_configuration_files" "clone_repo" "install_dev_tools"
+"create_configuration_files" "clone_repo"
 "configure_bind" "install_java" "install_maven" "install_nodejs" "install_python"
 "install_docker" "pull_docker_image" "install_docker_compose" "configure_service"
-"start_ODL" "compile_src" "build_docker_image"
+"start_ODL" "compile_src" "build_docker_image" "docker_openecomp_login"
+"pull_openecomp_image" "pull_onap_image" "coverity_repos" "add_no_proxy_value"
 )
-
-# TODO(electrocucaracha): Remove/Modify functions that doesn't support proxy settings
-if [ -z $http_proxy ] & [ -z $https_proxy ]; then
-    covered_functions=(${covered_functions[@]} "docker_openecomp_login" "pull_openecomp_image")
-fi
 
 # test_create_configuration_files() - Verify the creation of a configuration files
 function test_create_configuration_files {
@@ -33,14 +29,22 @@ function test_docker_openecomp_login {
     docker_openecomp_login
 }
 
-# test_pull_openecomp_image() - Verify the addition of a OpenECOMP container image
+# test_pull_openecomp_image() - Verify the OpenECOMP container image pulling process
 function test_pull_openecomp_image {
-    pull_openecomp_image portalapps ep:1610-1
+    local image_name=portal-apps
+    unset docker_version
+    pull_openecomp_image $image_name
 
-    asserts_installed_package docker-ce
-    asserts_image ep:1610-1
+    asserts_image $nexus_docker_repo/openecomp/$image_name
+}
 
-    docker rmi -f ep:1610-1
+# test_pull_onap_image() - Verify the ONAP cointainer pulling process
+function test_pull_onap_image {
+    local image_name=portal-apps
+    unset docker_version
+    pull_onap_image $image_name
+
+    asserts_image $nexus_docker_repo/onap/$image_name
 }
 
 # test_clone_repo() - Verify cloning and pulling source code from repositories
@@ -49,15 +53,6 @@ function test_clone_repo {
 
     asserts_installed_package git
     asserts_file_exist $git_src_folder/demo/LICENSE.TXT
-}
-
-# test_install_dev_tools() - Verify the correct installation of developer tools
-function test_install_dev_tools {
-    install_dev_tools
-
-    asserts_installed_package apt-transport-https
-    asserts_installed_package ca-certificates
-    asserts_installed_package curl
 }
 
 # test_configure_bind() - Verify the correct installation and configuration of bind
@@ -102,7 +97,6 @@ function test_install_python {
     install_python
     asserts_installed_package python2.7
     asserts_installed_package python-dev
-    asserts_file_exist /usr/local/bin/tox
 }
 
 # test_install_docker() - Verify the correct installation of Docker
@@ -118,8 +112,6 @@ function test_pull_docker_image {
     pull_docker_image $image
 
     asserts_image $image
-
-    docker rmi -f $image
 }
 
 # test_install_docker_compose() - Verify the correct installation of Docker Compose tool
@@ -158,13 +150,38 @@ function test_compile_src {
 
 # test_build_docker_image() - Verify that a docker image is created from source code
 function test_build_docker_image {
-    clone_repo portal
-    compile_src $git_src_folder/portal/ecomp-portal-widget-ms
-    build_docker_image $git_src_folder/portal/ecomp-portal-widget-ms
+    clone_repo ccsdk/distribution
+    build_docker_image $git_src_folder/ccsdk/distribution/ubuntu docker
 
-    asserts_image widget-ms
+    asserts_image onap/ccsdk-ubuntu-image
+}
 
-    docker rmi -f widget-ms
+# test_coverity_repos() - Verify that all the repos are covered by scripts
+function test_coverity_repos {
+    pushd /var/onap_tests/
+    cp projects.txt remaining_projects.txt
+    for project in "${repos[@]}"; do
+        for covered_repo in $project; do
+            sed -i '/^'${covered_repo//\//\\/}'$/d' remaining_projects.txt
+        done
+    done
+
+    threshold=75
+    num_projects=$(wc -l < projects.txt)
+    num_remaining_projects=$(wc -l < remaining_projects.txt)
+    coverage=`echo "scale=2; 100-($num_remaining_projects/$num_projects*100)" | bc | cut -d . -f 1`
+    if [ $coverage -lt $threshold ]; then
+        raise_error "There are repositories that are not covered by scripts"
+    fi
+    popd
+}
+
+# test_add_no_proxy_value - Verify that the no_proxy value is correctly set
+function test_add_no_proxy_value {
+    local ip="172.16.0.3"
+    add_no_proxy_value $ip
+
+    asserts_env_set no_proxy
 }
 
 if [ "$1" != '*' ]; then

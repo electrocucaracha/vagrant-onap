@@ -1,21 +1,29 @@
 #!/bin/bash
 
-set -o xtrace
-
-source /var/onap/commons
+source /var/onap/_commons
+source /var/onap/config/env-vars
 source /var/onap/_composed_functions
 source /var/onap/_onap_functions
+source /var/onap/_installers
 
 export MTU=$(/sbin/ifconfig | grep MTU | sed 's/.*MTU://' | sed 's/ .*//' |sort -n | head -1)
-export IP_ADDRESS=$(ifconfig eth0 | grep "inet addr" | tr -s ' ' | cut -d' ' -f3 | cut -d':' -f2)
+export NIC=$(ip route get 8.8.8.8 | awk '{ print $5; exit }')
+export IP_ADDRESS=$(ifconfig $NIC | grep "inet addr" | tr -s ' ' | cut -d' ' -f3 | cut -d':' -f2)
 
 mvn_conf_file=/root/.m2/settings.xml
-git_src_folder=/opt
 
 # configure_dns() - DNS/GW IP address configuration
 function configure_dns {
     echo "nameserver 10.0.0.1" >> /etc/resolvconf/resolv.conf.d/head
     resolvconf -u
+}
+
+# get_next_ip() - Function that provides the next ip
+function get_next_ip {
+    local ip=${1:-$IP_ADDRESS}
+    ip_hex=$(printf '%.2X%.2X%.2X%.2X\n' `echo $ip | sed -e 's/\./ /g'`)
+    next_ip_hex=$(printf %.8X `echo $(( 0x$ip_hex + 1 ))`)
+    echo $(printf '%d.%d.%d.%d\n' `echo $next_ip_hex | sed -r 's/(..)/0x\1 /g'`)
 }
 
 # _git_timed() - git can sometimes get itself infinitely stuck with transient network
@@ -44,121 +52,26 @@ function _git_timed {
 
 # clone_repo() - Clone Git repository into specific folder
 function clone_repo {
-    local repo_url=https://git.onap.org/
+    local repo_url=${3:-$git_url}
     local repo=$1
     local dest_folder=${2:-$git_src_folder/$repo}
     if [ ! -d $dest_folder ]; then
-        _git_timed clone ${repo_url}${repo} $dest_folder
-    else
-        pushd $dest_folder
-        _git_timed pull
-        popd
+        if [[ "$debug" == "False" ]]; then
+            _git_timed clone --quiet ${repo_url}${repo} $dest_folder
+        else
+            _git_timed clone ${repo_url}${repo} $dest_folder
+        fi
     fi
 }
 
-# install_dev_tools() - Install basic dependencies
-function install_dev_tools {
-    install_packages apt-transport-https ca-certificates curl
-}
+# clone_repos() - Function that clones source repositories for a given project
+function clone_repos {
+    local project=$1
+    local repo_name=${2:-$project}
 
-# _install_bind() - Install bind utils
-function _install_bind {
-    install_packages bind9 bind9utils
-}
-
-# install_java() - Install java binaries
-function install_java {
-    if is_package_installed openjdk-8-jdk; then
-        return
-    fi
-    install_package software-properties-common
-    add-apt-repository -y ppa:openjdk-r/ppa
-
-    # Remove Java 7
-    uninstall_packages default-jre openjdk-7-jdk openjdk-7-jre openjdk-7-jre-headless
-
-    install_package openjdk-8-jdk
-    # ca-certificates-java is not a dependency in the Oracle JDK/JRE so this must be explicitly installed.
-    /var/lib/dpkg/info/ca-certificates-java.postinst configure
-}
-
-# install_maven() - Install maven binaries
-function install_maven {
-    if is_package_installed maven3; then
-        return
-    fi
-    install_java
-    install_package software-properties-common
-    add-apt-repository -y ppa:andrei-pozolotin/maven3
-    install_package maven3
-
-    # Remove Java 7
-    uninstall_package openjdk-7-jdk
-
-    _configure_maven
-}
-
-# _configure_docker_settings() - Configures Docker settings
-function _configure_docker_settings {
-    if [ $http_proxy ]; then
-        echo "export http_proxy=$http_proxy" >> /etc/default/docker
-    fi
-    if [ $https_proxy ]; then
-        echo "export https_proxy=$https_proxy" >> /etc/default/docker
-    fi
-
-    echo "DOCKER_OPTS=\"-H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock\"" >> /etc/default/docker
-    usermod -a -G docker vagrant
-}
-
-# install_nodejs() - Download and install NodeJS
-function install_nodejs {
-    if is_package_installed nodejs; then
-        return
-    fi
-    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-    install_package nodejs
-
-    # Update NPM to latest version
-    npm install npm -g
-}
-
-# install_python() - Install Python 2.7 and other tools necessary for development.
-function install_python {
-    install_packages python2.7 python-dev
-}
-
-# _install_pip() - Install Python Package Manager
-function _install_pip {
-    install_python
-    if [ ! -f /usr/local/bin/pip ]; then
-        curl -sL https://bootstrap.pypa.io/get-pip.py | python
-    fi
-}
-
-# install_python_package() - Install a python module
-function install_python_package {
-    local python_package=$1
-
-    _install_pip
-    pip install $python_package
-}
-
-# install_docker() - Download and install docker-engine
-function install_docker {
-    if is_package_installed docker-ce; then
-        return
-    fi
-    install_package software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-    add-apt-repository \
-        "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-        $(lsb_release -cs) \
-        stable"
-    install_package docker-ce
-    _configure_docker_settings
-    service docker restart
-    sleep 10
+    for repo in ${repos[$project]}; do
+        clone_repo $repo ${src_folders[$project]}${repo#*$repo_name}
+    done
 }
 
 # pull_docker_image() - Pull Docker container image from the Public Docker Registry Hub
@@ -166,31 +79,43 @@ function pull_docker_image {
     install_docker
     local image=$1
     local tag=$2
+
+    echo "docker pull ${image}"
     docker pull ${image}
     if [ ${tag} ]; then
         docker tag ${image} $tag
     fi
 }
 
-# install_docker_compose() - Download and install docker-engine 
-function install_docker_compose {
-    local docker_compose_version=${1:-1.12.0}
-    if [ ! -d /opt/docker ]; then
-        mkdir /opt/docker
-        curl -L https://github.com/docker/compose/releases/download/$docker_compose_version/docker-compose-`uname -s`-`uname -m` > /opt/docker/docker-compose
-        chmod +x /opt/docker/docker-compose
-    fi
+# wait_docker_pull() - Function that waits for all docker pull processes
+function wait_docker_pull {
+    local counter=60
+    local delay=${1:-60}
+
+    sleep $delay
+    while [ $(ps -ef | grep "docker pull" | wc -l) -gt 1 ]; do
+        sleep $delay
+        counter=$((counter - 1))
+        if [ "$counter" -eq 0 ]; then
+            break
+        fi
+    done
 }
 
-# _install_ODL() - Download and Install OpenDayLight SDN controller
-function _install_ODL {
-    if [ ! -d /opt/opendaylight/current ]; then
-        mkdir -p /opt/opendaylight/
-        wget "https://nexus.opendaylight.org/content/repositories/public/org/opendaylight/integration/distribution-karaf/"$odl_version"/distribution-karaf-"$odl_version".tar.gz" -P /opt/
-        tar xvf "/opt/distribution-karaf-"$odl_version".tar.gz" -C /opt/
-        mv "/opt/distribution-karaf-"$odl_version /opt/opendaylight/current
-        rm -rf "/opt/distribution-karaf-"$odl_version".tar.gz"
-    fi
+# run_docker_image() - Starts a Docker instance
+function run_docker_image {
+    install_docker
+    docker run $@
+}
+
+# run_docker_compose() - Ensures that docker compose is installed and run it in background
+function run_docker_compose {
+    local folder=$1
+
+    install_docker_compose
+    pushd $folder
+    /opt/docker/docker-compose up -d
+    popd
 }
 
 # start_ODL() - Start OpenDayLight SDN controller
@@ -208,43 +133,105 @@ function start_ODL {
 function compile_src {
     local src_folder=$1
     pushd $src_folder
+    local mvn_build='mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dadditionalparam=-Xdoclint:none'
+    if [[ "$debug" == "False" ]]; then
+        mvn_build+=" -q"
+    fi
     if [ -f pom.xml ]; then
         install_maven
-        mvn clean install -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dadditionalparam=-Xdoclint:none
+        echo "Compiling $src_folder folder..."
+        eval $mvn_build
     fi
     popd
+}
+
+# compile_repos() - Function that compiles source repositories for a given project
+function compile_repos {
+    local project=$1
+
+    for repo in ${repos[$project]}; do
+        compile_src ${src_folders[$project]}${repo#*$project}
+    done
 }
 
 # build_docker_image() - Build Docker container image from source code
 function build_docker_image {
     local src_folder=$1
     local profile=$2
-    install_maven
     install_docker
     pushd $src_folder
 
-    # Cleanup external repo
-    sed -i 's|${docker.push.registry}/||g' pom.xml
-    local mvn_docker="mvn clean package docker:build"
-    if [ $profile ]; then
-        mvn_docker+=" -P $profile"
-    fi
-    if [ $http_proxy ]; then
-        if ! grep -ql "docker.buildArg.http_proxy" pom.xml ; then
-            mvn_docker+=" -Ddocker.buildArg.http_proxy=$http_proxy"
+    if [ -f pom.xml ]; then
+        install_maven
+        # Cleanup external repo
+        sed -i 's|${docker.push.registry}/||g' pom.xml
+        local docker_build="mvn package docker:build -DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true"
+        if [ $profile ]; then
+            docker_build+=" -P $profile"
         fi
+        if [[ "$debug" == "False" ]]; then
+            docker_build+=" -q"
+        fi
+        if [ $http_proxy ]; then
+            if ! grep -ql "docker.buildArg.http_proxy" pom.xml ; then
+                docker_build+=" -Ddocker.buildArg.http_proxy=$http_proxy"
+            fi
         if ! grep -ql "docker.buildArg.HTTP_PROXY" pom.xml ; then
-            mvn_docker+=" -Ddocker.buildArg.HTTP_PROXY=$http_proxy"
+            docker_build+=" -Ddocker.buildArg.HTTP_PROXY=$http_proxy"
+        fi
+        fi
+        if [ $https_proxy ]; then
+            if ! grep -ql "docker.buildArg.https_proxy" pom.xml ; then
+                docker_build+=" -Ddocker.buildArg.https_proxy=$https_proxy"
+            fi
+            if ! grep -ql "docker.buildArg.HTTPS_PROXY" pom.xml ; then
+                docker_build+=" -Ddocker.buildArg.HTTPS_PROXY=$https_proxy"
+            fi
+        fi
+    elif [ -f Dockerfile ]; then
+        # NOTE: Workaround for dmmapbc images
+        sed -i '/LocalKey/d' Dockerfile
+        sed -i "s/nexus3.onap.org\:10003\///g" Dockerfile
+        local docker_build="docker build -t $profile -f ./Dockerfile ."
+        if [ $http_proxy ]; then
+            docker_build+=" --build-arg http_proxy=$http_proxy"
+            docker_build+=" --build-arg HTTP_PROXY=$http_proxy"
+        fi
+        if [ $https_proxy ]; then
+            docker_build+=" --build-arg https_proxy=$https_proxy"
+            docker_build+=" --build-arg HTTPS_PROXY=$https_proxy"
         fi
     fi
-    if [ $https_proxy ]; then
-        if ! grep -ql "docker.buildArg.https_proxy" pom.xml ; then
-            mvn_docker+=" -Ddocker.buildArg.https_proxy=$https_proxy"
-        fi
-        if ! grep -ql "docker.buildArg.HTTPS_PROXY" pom.xml ; then
-            mvn_docker+=" -Ddocker.buildArg.HTTPS_PROXY=$https_proxy"
-        fi
-    fi
-    eval $mvn_docker
+    echo $docker_build
+    eval $docker_build
     popd
 }
+
+# mount_external_partition() - Create partition and mount the external volume
+function mount_external_partition {
+    local dev_name="/dev/$1"
+    local mount_dir=$2
+
+    sfdisk $dev_name << EOF
+;
+EOF
+    mkfs -t ext4 ${dev_name}1
+    mkdir -p $mount_dir
+    mount ${dev_name}1 $mount_dir
+    echo "${dev_name}1  $mount_dir           ext4    errors=remount-ro,noatime,barrier=0 0       1" >> /etc/fstab
+}
+
+# add_no_proxy_value() - Add no_proxy values into environment file, used for internal IPs generated at deploy time
+function add_no_proxy_value {
+    if [[ `grep "no_proxy" /etc/environment` ]]; then
+        sed -i.bak "s/^no_proxy.*$/&,$1/" /etc/environment
+    else
+        echo "no_proxy=$1" >> /etc/environment
+    fi
+    if [[ `grep "NO_PROXY" /etc/environment` ]]; then
+        sed -i.bak "s/^NO_PROXY.*$/&,$1/" /etc/environment
+    else
+        echo "NO_PROXY=$1" >> /etc/environment
+    fi
+}
+

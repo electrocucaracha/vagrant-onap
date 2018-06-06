@@ -1,0 +1,49 @@
+#!/bin/bash
+
+source /var/onap/functions
+
+# _build_dmaap_images() - Build DMaaP Docker images from source code
+function _build_dmaap_images {
+    if [[ "$compile_repo" != "True" ]]; then
+        compile_repos "dmaap"
+    fi
+    for project in buscontroller datarouter/datarouter-node datarouter/datarouter-prov messagerouter/messageservice; do
+        build_docker_image ${src_folders[dmaap]}/$project
+    done
+}
+
+# get_dmaap_images() - Get DMaaP Docker images
+function get_dmaap_images {
+    if [[ "$build_image" == "True" ]]; then
+        _build_dmaap_images
+    else
+        for image in dmaap-mr datarouter-prov datarouter-node buscontroller; do
+            pull_onap_image dmaap/$image
+        done
+    fi
+}
+
+# install_dmaap() - Install DMaaP services
+function install_dmaap {
+    cp ${src_folders[dmaap]}/messagerouter//messageservice/bundleconfig-local/etc/appprops/MsgRtrApi.properties /var/tmp/
+    sed -i "s|config.zk.servers=<zookeeper_host>|config.zk.servers=172.18.0.3|g" /var/tmp/MsgRtrApi.properties
+    sed -i "s|kafka.metadata.broker.list=<kafka_host>:<kafka_port>|kafka.metadata.broker.list=172.18.0.2:9092|g" /var/tmp/MsgRtrApi.properties
+    run_docker_compose ${src_folders[dmaap]}/messagerouter/messageservice/src/main/resources/docker-compose/
+    run_docker_compose ${src_folders[dmaap]}/datarouter/datarouter-prov/src/main/resources/docker-compose/
+}
+
+# init_dmaap() - Function that initialize DMaaP service
+function init_dmaap {
+    if [[ "$clone_repo" == "True" ]]; then
+        clone_repos "dmaap"
+        if [[ "$compile_repo" == "True" ]]; then
+            compile_repos "dmaap"
+        fi
+    fi
+    if [[ "$skip_get_images" == "False" ]]; then
+        get_dmaap_images
+    fi
+    if [[ "$skip_install" == "False" ]]; then
+        install_dmaap
+    fi
+}

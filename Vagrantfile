@@ -1,410 +1,525 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-conf = {
-# Generic parameters used across all ONAP components
-  'public_net_id'       => '00000000-0000-0000-0000-000000000000',
+configuration = {
+  # Generic parameters used across all ONAP components
   'key_name'            => 'ecomp_key',
   'pub_key'             => '',
   'nexus_repo'          => 'https://nexus.onap.org/content/sites/raw',
+  'nexus_repo_root'     => 'https://nexus.onap.org',
+  'nexus_url_snapshot'  => 'https://nexus.onap.org/content/repositories/snapshots',
   'nexus_docker_repo'   => 'nexus3.onap.org:10001',
   'nexus_username'      => 'docker',
   'nexus_password'      => 'docker',
   'dmaap_topic'         => 'AUTO',
   'artifacts_version'   => '1.0.0',
-  'docker_version'      => '1.0-STAGING-latest',
-  'gerrit_branch'       => 'master',
-# Parameters for DCAE instantiation
+  'docker_version'      => 'latest',
+  # Parameters for DCAE instantiation
   'dcae_zone'           => 'iad4',
   'dcae_state'          => 'vi',
   'openstack_tenant_id' => '',
   'openstack_username'  => '',
   'openstack_api_key'   => '',
   'openstack_password'  => '',
-  'nexus_repo_root'     => 'https://nexus.onap.org',
-  'nexus_url_snapshot'  => 'https://nexus.onap.org/content/repositories/snapshots',
-  'gitlab_branch'       => 'master',
-  'build_image'         => 'True',
-  'pull_docker_image'   => 'True',
   'odl_version'         => '0.5.3-Boron-SR3',
+  # Parameters for enabling features
+  'debug'               => 'True',
+  'build_image'         => 'True',
   'clone_repo'          => 'True',
   'compile_repo'        => 'False',
-  'enable_oparent'      => 'True'
+  'enable_oparent'      => 'True',
+  'skip_get_images'     => 'False',
+  'skip_install'        => 'True'
 }
+
+box = {
+  :virtualbox => 'ubuntu/trusty64',
+  :libvirt => 'elastic/ubuntu-14.04-x86_64',
+  :openstack => nil
+}
+
+nodes = [
+    {
+    :name   => "aai",
+    :hostname => "aai.hbase.simpledemo.onap.org",
+    :ips    => ['10.252.0.6', "192.168.50.6"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 8 * 1024,
+    :groups => ["individual"],
+    :args   => ["aai"],
+    :fwds   => [
+      { :guest => 8446, :host => 8446, :guest_ip => '192.168.50.6' },
+      { :guest => 9446, :host => 9446, :guest_ip => '192.168.50.6' },
+    ]
+  },
+  {
+    :name   => "appc",
+    :ips    => ['10.252.0.14', "192.168.50.14"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["appc"],
+  },
+  {
+    :name   => "ccsdk",
+    :ips    => ['10.252.0.19', "192.168.50.19"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["ccsdk"],
+  },
+  {
+    :name   => "dcae",
+    :ips    => ['10.252.0.12', "192.168.50.12"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["dcae"],
+  },
+  {
+    :name   => "dmaap",
+    :ips    => ['10.252.0.22', "192.168.50.22"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["dmaap"],
+  },
+  {
+    :name   => "dns",
+    :ips    => ['10.252.0.3', "192.168.50.3"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 1 * 1024,
+    :groups => ["individual"],
+    :flavor => 'm1.small',
+  },
+  {
+    :name   => "integration",
+    :ips    => ['10.252.0.23', "192.168.50.23"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :flavor => 'm1.small',
+    :args   => ["integration"]
+  },
+  {
+    :name   => "message-router",
+    :ips    => ['10.252.0.4', "192.168.50.4"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["mr"],
+  },
+  {
+    :name   => "mso",
+    :ips    => ['10.252.0.20', "192.168.50.20"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["mso"],
+  },
+  {
+    :name   => "msb",
+    :ips    => ['10.252.0.7', "192.168.50.7"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["msb"],
+  },
+  {
+    :name   => "multicloud",
+    :ips    => ['10.252.0.16', "192.168.50.16"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["multicloud"],
+    :fwds   => [
+      { :guest => 9003, :host => 9003, :guest_ip => '192.168.50.16' },
+    ]
+  },
+  {
+    :name   => "oom",
+    :ips    => ['10.252.0.21', "192.168.50.21"],
+    :macs   => [],
+    :cpus   => 32,
+    :cpu    => "50",
+    :ram    => 128 * 1024,
+    :groups => ["individual"],
+    :args   => ["oom"],
+    :hd     => { :virtualbox => "163840", :libvirt => "160G", },
+  },
+  {
+    :name   => "policy",
+    :ips    => ['10.252.0.13', "192.168.50.13"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["policy"],
+  },
+  {
+    :name   => "portal",
+    :ips    => ['10.252.0.11', "192.168.50.11"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["portal"],
+  },
+  {
+    :name   => "robot",
+    :ips    => ['10.252.0.8', "192.168.50.8"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["robot"],
+  },
+  {
+    :name   => "sdc",
+    :ips    => ['10.252.0.5', "192.168.50.5"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 6 * 1024,
+    :groups => ["individual"],
+    :args   => ["sdc"],
+    :hd     => { :virtualbox => "20480", :libvirt => "20G", },
+    :fwds   => [
+      { :guest => 8285, :host => 8285, :guest_ip => '192.168.50.5' },
+    ]
+  },
+  {
+    :name   => "sdnc",
+    :ips    => ['10.252.0.10', "192.168.50.10"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ["sdnc"],
+  },
+  {
+    :name   => "testing",
+    :ips    => ['10.252.2.3', "192.168.52.3"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["testing"],
+    :flavor => 'm1.small',
+  },
+  {
+    :name   => "vfc",
+    :ips    => ['10.252.0.15', "192.168.50.15"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ['vfc'],
+  },
+  {
+    :name   => "vid",
+    :ips    => ['10.252.0.9', "192.168.50.9"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ['vid'],
+  },
+  {
+    :name   => "vnfsdk",
+    :ips    => ['10.252.0.18', "192.168.50.18"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ['vnfsdk'],
+  },
+  {
+    :name   => "vvp",
+    :ips    => ['10.252.0.17', "192.168.50.17"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 4 * 1024,
+    :groups => ["individual"],
+    :args   => ['vvp'],
+  },
+  {
+    :name   => "openstack",
+    :ips    => ['10.252.3.3', "192.168.53.3"],
+    :macs   => [],
+    :cpus   => 2,
+    :cpu    => "50",
+    :ram    => 8 * 1024,
+    :groups => ["individual"],
+    :args   => ['openstack'],
+    :fwds   => [
+      { :guest => 80, :host => 8888, :guest_ip => '192.168.53.4' },
+      { :guest => 6080, :host => 6080, :guest_ip => '192.168.53.4' },
+    ]
+  }
+]
+
+run_path   = 'vagrant_utils/postinstall.sh'
 
 Vagrant.require_version ">= 1.8.6"
 
-# Determine the OS for the host computer
-module OS
-    def OS.windows?
-        (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
-    end
-
-    def OS.mac?
-        (/darwin/ =~ RUBY_PLATFORM) != nil
-    end
-
-    def OS.unix?
-        !OS.windows?
-    end
-
-    def OS.linux?
-        OS.unix? and not OS.mac?
-    end
-end
-
-if OS.windows?
-    puts "Vagrant launched from windows. This configuration has not fully tested."
-end
-
 # Determine the provider used
 provider = (ENV['VAGRANT_DEFAULT_PROVIDER'] || :virtualbox).to_sym
-puts "Using #{provider} provider"
+puts "[INFO] Provider: #{provider} "
 
 vd_conf = ENV.fetch('VD_CONF', 'etc/settings.yaml')
 if File.exist?(vd_conf)
   require 'yaml'
   user_conf = YAML.load_file(vd_conf)
-  conf.update(user_conf)
+  configuration.update(user_conf)
 end
 
+# Set network interface
+net_interface = 'vboxnet0'
+is_windows = Gem.win_platform?
+if is_windows
+    net_interface = 'VirtualBox Host-Only Ethernet Adapter #2'
+end
+puts "[INFO] Net interface: #{net_interface}"
+
+
+# If argument is given use it. Otherwise use Env: DEPLOY_MODE else use default
+requested_machine = ARGV[1]
+
 deploy_mode = ENV.fetch('DEPLOY_MODE', 'individual')
-sdc_volume='vol1-sdc-data.vdi'
+if requested_machine != nil
+    if requested_machine.include?("testing")
+        deploy_mode = requested_machine
+    end
+end
+
+# Catch the status of all machines
+if ARGV[0] == 'status' || ARGV[0] == 'destroy'
+    deploy_mode = 'NA'
+end
+
+puts "[INFO] Deploy Mode:  #{deploy_mode}"
+
+# In case of testing clean the nodes list
+case deploy_mode
+    when 'individual'
+        nodes.select! do |node|
+            if node[:groups][0].include?("individual")
+              true if node[:name]
+            end
+        end
+
+    when 'testing'
+        nodes.select! do |node|
+            if node[:name].include?("testing")
+              true if node[:name]
+            end
+        end
+end
 
 Vagrant.configure("2") do |config|
 
-  if ENV['http_proxy'] != nil and ENV['https_proxy'] != nil and ENV['no_proxy'] != nil
-    if not Vagrant.has_plugin?('vagrant-proxyconf')
-      system 'vagrant plugin install vagrant-proxyconf'
-      raise 'vagrant-proxyconf was installed but it requires to execute again'
+    # PROXY definitions
+    if ENV['http_proxy'] != nil and ENV['https_proxy'] != nil
+      if not Vagrant.has_plugin?('vagrant-proxyconf')
+        system 'vagrant plugin install vagrant-proxyconf'
+        raise 'vagrant-proxyconf was installed but it requires to execute again'
+      end
+      config.proxy.enabled = { docker: false }
+      config.proxy.http     = ENV['http_proxy']
+      config.proxy.https    = ENV['https_proxy']
+      configuration['socks_proxy'] = ENV['socks_proxy']
     end
-    config.proxy.http     = ENV['http_proxy']
-    config.proxy.https    = ENV['https_proxy']
-    config.proxy.no_proxy = ENV['no_proxy']
-  end
 
-  if Vagrant.has_plugin?('vagrant-vbguest')
-    puts 'vagrant-vbguest auto_update feature will be disable to avoid sharing conflicts'
-    config.vbguest.auto_update = false
-  end
-
-  config.vm.box = 'ubuntu/trusty64'
-  if provider == :libvirt
-    config.vm.box = 'sputnik13/trusty64'
-    if not Vagrant.has_plugin?('vagrant-libvirt')
-      system 'vagrant plugin install vagrant-libvirt'
-      raise 'vagrant-libvirt was installed but it requires to execute again'
+    if Vagrant.has_plugin?('vagrant-vbguest')
+      puts 'vagrant-vbguest auto_update feature will be disable to avoid sharing conflicts'
+      config.vbguest.auto_update = false
     end
-  end
-  if provider == :openstack
-    config.vm.box = nil
-    config.ssh.username = 'ubuntu'
-    if not Vagrant.has_plugin?('vagrant-openstack-provider')
-      system 'vagrant plugin install vagrant-openstack-provider'
-      raise 'vagrant-openstack-provider was installed but it requires to execute again'
+
+    sync_type = "virtualbox"
+    if provider == :libvirt
+      if not Vagrant.has_plugin?('vagrant-libvirt')
+        system 'vagrant plugin install vagrant-libvirt'
+        raise 'vagrant-libvirt was installed but it requires to execute again'
+      end
+      sync_type = "nfs"
     end
-  end
-  #config.vm.provision "docker"
-  config.vm.synced_folder './opt', '/opt/', create: true
-  config.vm.synced_folder './lib', '/var/onap/', create: true
-  config.vm.synced_folder '~/.m2', '/root/.m2/', create: true
 
-  config.vm.provider :virtualbox do |v|
-    v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-  end
-  config.vm.provider :libvirt do |v|
-    v.memory = 4 * 1024
-    v.nested = true
-  end
-  config.vm.provider :openstack do |v|
+    if provider == :openstack
+      config.ssh.username = 'ubuntu'
+      if not Vagrant.has_plugin?('vagrant-openstack-provider')
+        system 'vagrant plugin install vagrant-openstack-provider'
+        raise 'vagrant-openstack-provider was installed but it requires to execute again'
+      end
+    end
 
-    v.openstack_auth_url               = ENV.fetch('OS_AUTH_URL', '')
-    v.tenant_name                      = ENV.fetch('OS_TENANT_NAME', '')
-    v.username                         = ENV.fetch('OS_USERNAME', '')
-    v.password                         = ENV.fetch('OS_PASSWORD', '')
-    v.region                           = ENV.fetch('OS_REGION_NAME', '')
-    v.identity_api_version             = ENV.fetch('OS_IDENTITY_API_VERSION', '')
-    v.domain_name                      = ENV.fetch('OS_PROJECT_DOMAIN_ID', '')
-    v.project_name                     = ENV.fetch('OS_PROJECT_NAME', '')
+    nodes.each do |node|
+      config.vm.define node[:name] do |nodeconfig|
 
-    v.floating_ip_pool                 = ENV.fetch('OS_FLOATING_IP_POOL', '')
-    v.floating_ip_pool_always_allocate = (ENV['OS_FLOATING_IP_ALWAYS_ALLOCATE'] == 'true')
-    v.image                            = ENV.fetch('OS_IMAGE', '')
-    v.security_groups                  = [ENV.fetch('OS_SEC_GROUP', '')]
-    v.flavor                           = 'm1.medium'
-    v.networks                         = ENV.fetch('OS_NETWORK', '')
-  end
-
-  case deploy_mode
-
-  when 'all-in-one'
-
-    config.vm.define :all_in_one do |all_in_one|
-      all_in_one.vm.hostname = 'all-in-one'
-      all_in_one.vm.network :private_network, ip: '192.168.50.3'
-      all_in_one.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 12 * 1024]
-        unless File.exist?(sdc_volume)
-           v.customize ['createhd', '--filename', sdc_volume, '--size', 20 * 1024]
+      # NO_PROXY definitions
+      if ENV['no_proxy'] != nil
+        if not Vagrant.has_plugin?('vagrant-proxyconf')
+          system 'vagrant plugin install vagrant-proxyconf'
+          raise 'vagrant-proxyconf was installed but it requires to execute again'
         end
-        v.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', sdc_volume]
+        config.proxy.no_proxy = node[:ips].join(",") + "," + ENV['no_proxy']
       end
-      all_in_one.vm.provider "libvirt" do |v|
-        v.memory = 12 * 1024
-        v.nested = true
-        v.storage :file, path: sdc_volume, bus: 'sata', device: 'vdb', size: '2G'
-      end
-      all_in_one.vm.provider "openstack" do |v|
-        v.server_name = 'all-in-one'
-        v.flavor = 'm1.xlarge'
-      end
-      all_in_one.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['mr', 'sdc', 'aai', 'mso', 'robot', 'vid', 'sdnc', 'portal', 'dcae', 'policy', 'appc', 'vfc', 'ccsdk']
-        s.env = conf
-      end
-    end
 
-  when 'individual'
+        # Common Settings:
 
-    config.vm.define :dns do |dns|
-      dns.vm.hostname = 'dns'
-      dns.vm.network :private_network, ip: '192.168.50.3'
-      dns.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 1 * 1024]
-      end
-      dns.vm.provider "libvirt" do |v|
-        v.memory = 1 * 1024
-        v.nested = true
-      end
-      dns.vm.provider "openstack" do |v|
-        v.server_name = 'dns'
-        v.flavor = 'm1.small'
-      end
-      dns.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.env = conf
-      end 
-    end
+        nodeconfig.vm.provider "virtualbox" do |vbox|
+          vbox.customize ['modifyvm', :id, '--nictype1', 'virtio']
+          vbox.customize ['modifyvm', :id, '--audio', 'none']
+          vbox.customize ['modifyvm', :id, '--vram', '1']
+          vbox.customize ['modifyvm', :id, "--cpuhotplug", "off"]
+          vbox.customize ['modifyvm', :id, "--cpuexecutioncap", node[:cpu]]
+          vbox.customize ['modifyvm', :id, "--cpus", node[:cpus]]
+          vbox.customize ["modifyvm", :id, "--memory", node[:ram]]
 
-    config.vm.define :mr do |mr|
-      mr.vm.hostname = 'message-router'
-      mr.vm.network :private_network, ip: '192.168.50.4'
-      mr.vm.provider "openstack" do |v|
-        v.server_name = 'message-router'
-      end
-      mr.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['mr']
-        s.env = conf
-      end
-    end
+          # Set Network
+          nodeconfig.vm.network :private_network,
+            :adapter => 2,
+            :name => net_interface,
+            :ip  => node[:ips][0]
 
-    config.vm.define :sdc do |sdc|
-      sdc.vm.hostname = 'sdc'
-      sdc.vm.network :private_network, ip: '192.168.50.5'
-      sdc.vm.provider "virtualbox" do |v|
-        unless File.exist?(sdc_volume)
-           v.customize ['createhd', '--filename', sdc_volume, '--size', 20 * 1024]
+          nodeconfig.vm.network :private_network,
+            :adapter => 3,
+            :ip  => node[:ips][1],
+            :type => :static
+
+          # Set Storage
+          if node.has_key? :hd
+            volume_file = node[:name] + '-vol1-data.vdi'
+            unless File.exist?(volume_file)
+              vbox.customize ['createmedium', 'disk', '--filename', volume_file, '--size', node[:hd][provider]]
+            end
+            vbox.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', volume_file]
+          end
         end
-        v.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', sdc_volume]
-      end
-      sdc.vm.provider "libvirt" do |v|
-        v.storage :file, path: sdc_volume, bus: 'sata', device: 'vdb', size: '2G'
-      end
-      sdc.vm.provider "openstack" do |v|
-        v.server_name = 'sdc'
-      end
-      sdc.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['sdc']
-        s.env = conf
-      end
-    end
 
-    config.vm.define :aai do |aai|
-      aai.vm.hostname = 'aai'
-      aai.vm.network :private_network, ip: '192.168.50.6'
-      aai.vm.provider "openstack" do |v|
-        v.server_name = 'aai'
-      end
-      aai.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['aai']
-        s.env = conf
-      end 
-    end
+        nodeconfig.vm.provider "libvirt" do |lbox|
+          lbox.memory = node[:ram]
+          lbox.nested = true
+          lbox.cpu_mode = 'host-passthrough'
+          lbox.cpus = node[:cpus]
 
-    config.vm.define :mso do |mso|
-      mso.vm.hostname = 'mso'
-      mso.vm.network :private_network, ip: '192.168.50.7'
-      mso.vm.provider "openstack" do |v|
-        v.server_name = 'mso'
-      end
-      mso.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['mso']
-        s.env = conf
-      end 
-    end
-  
-    config.vm.define :robot do |robot|
-      robot.vm.hostname = 'robot'
-      robot.vm.network :private_network, ip: '192.168.50.8'
-      robot.vm.provider "openstack" do |v|
-        v.server_name = 'robot'
-      end
-      robot.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['robot']
-        s.env = conf
-      end
-    end
+          # Set Network
+          nodeconfig.vm.network :private_network,
+            :ip  => node[:ips][0]
 
-    config.vm.define :vid do |vid|
-      vid.vm.hostname = 'vid'
-      vid.vm.network :private_network, ip: '192.168.50.9'
-      vid.vm.provider "openstack" do |v|
-        v.server_name = 'vid'
-      end
-      vid.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['vid']
-        s.env = conf
-      end
-    end
+          nodeconfig.vm.network :private_network,
+            :ip  => node[:ips][1],
+            :type => :static
 
-    config.vm.define :sdnc do |sdnc|
-      sdnc.vm.hostname = 'sdnc'
-      sdnc.vm.network :private_network, ip: '192.168.50.10'
-      sdnc.vm.provider "openstack" do |v|
-        v.server_name = 'sdnc'
-      end
-      sdnc.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['sdnc']
-        s.env = conf
-      end
-    end
+          # Set Storage
+          if node.has_key? :hd
+            lbox.storage :file, bus: 'sata', device: 'sda', size: node[:hd][provider]
+          end
+        end
+        if node.has_key? :fwds
+          node[:fwds].each do |fwd|
+            nodeconfig.vm.network :forwarded_port,
+              :guest => fwd[:guest],
+              :guest_ip => fwd[:guest_ip],
+              :host => fwd[:host],
+              :host_ip => "0.0.0.0"
+          end
+        end
 
-    config.vm.define :portal do |portal|
-      portal.vm.hostname = 'portal'
-      portal.vm.network :private_network, ip: '192.168.50.11'
-      portal.vm.provider "openstack" do |v|
-        v.server_name = 'portal'
-      end
-      portal.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['portal']
-        s.env = conf
-      end
-    end
+        nodeconfig.vm.provider :openstack do |obox|
+          obox.openstack_auth_url               = ENV.fetch('OS_AUTH_URL', '')
+          obox.tenant_name                      = ENV.fetch('OS_TENANT_NAME', '')
+          obox.username                         = ENV.fetch('OS_USERNAME', '')
+          obox.password                         = ENV.fetch('OS_PASSWORD', '')
+          obox.region                           = ENV.fetch('OS_REGION_NAME', '')
+          obox.identity_api_version             = ENV.fetch('OS_IDENTITY_API_VERSION', '')
+          obox.domain_name                      = ENV.fetch('OS_PROJECT_DOMAIN_ID', '')
+          obox.project_name                     = ENV.fetch('OS_PROJECT_NAME', '')
+          obox.floating_ip_pool                 = ENV.fetch('OS_FLOATING_IP_POOL', '')
+          obox.floating_ip_pool_always_allocate = (ENV['OS_FLOATING_IP_ALWAYS_ALLOCATE'] == 'true')
+          obox.image                            = ENV.fetch('OS_IMAGE', '')
+          obox.security_groups                  = [ENV.fetch('OS_SEC_GROUP', '')]
+          obox.networks                         = ENV.fetch('OS_NETWORK', '')
+          obox.flavor                           = node[:flavor]
+          obox.server_name                      = node[:name]
+        end
 
-    config.vm.define :dcae do |dcae|
-      dcae.vm.hostname = 'dcae'
-      dcae.vm.network :private_network, ip: '192.168.50.12'
-      dcae.vm.provider "openstack" do |v|
-        v.server_name = 'dcae'
-      end
-      dcae.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['dcae']
-        s.env = conf
-      end
-    end
+        # Set Box type
+        if ["openstack", "oom"].include? node[:name]
+          box = {
+            :virtualbox => 'ubuntu/xenial64',
+            :libvirt => 'elastic/ubuntu-16.04-x86_64'
+          }
+        end
+        nodeconfig.vm.box = box[provider]
 
-    config.vm.define :policy do |policy|
-      policy.vm.hostname = 'policy'
-      policy.vm.network :private_network, ip: '192.168.50.13'
-      policy.vm.provider "openstack" do |v|
-        v.server_name = 'policy'
-      end
-      policy.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['policy']
-        s.env = conf
-      end
-    end
+        # Set Node name
+        nodeconfig.vm.hostname = if node.has_key? :hostname then node[:hostname] else node[:name] end
 
-    config.vm.define :appc do |appc|
-      appc.vm.hostname = 'appc'
-      appc.vm.network :private_network, ip: '192.168.50.14'
-      appc.vm.provider "openstack" do |v|
-        v.server_name = 'appc'
-      end
-      appc.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['appc']
-        s.env = conf
-      end
-    end
+        # Set Sync Folder
+        nodeconfig.vm.synced_folder ".", "/vagrant", disabled: true
+        nodeconfig.vm.synced_folder './opt', '/opt/onap/', create: true, type: sync_type
+        nodeconfig.vm.synced_folder './lib', '/var/onap/', create: true, type: sync_type
+        if !is_windows
+          nodeconfig.vm.synced_folder '~/.m2', '/root/.m2/', create: true
+        end
 
-    config.vm.define :vfc do |vfc|
-      vfc.vm.hostname = 'vfc'
-      vfc.vm.network :private_network, ip: '192.168.50.15'
-      vfc.vm.provider "openstack" do |v|
-        v.server_name = 'vfc'
-      end
-      vfc.vm.provision 'docker'
-      vfc.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['vfc']
-        s.env = conf
-      end
-    end
+        # Specific settings:
 
-    config.vm.define :multicloud do |multicloud|
-      multicloud.vm.hostname = 'multicloud'
-      multicloud.vm.network :private_network, ip: '192.168.50.16'
-      multicloud.vm.provider "openstack" do |v|
-        v.server_name = 'multicloud'
-      end
-      multicloud.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['multicloud']
-        s.env = conf
-      end
-    end
+        if node[:name].include? "testing"
+            nodeconfig.vm.synced_folder './tests', '/var/onap_tests/', create: true
+            test_suite = ENV.fetch('TEST_SUITE', '*')
+            test_case = ENV.fetch('TEST_CASE', '*')
+            # Override variables
+            run_path = 'vagrant_utils/unit_testing.sh'
+            node[:args] = [test_suite, test_case]
+        else
+            configuration['skip_get_images'] = ENV.fetch('SKIP_GET_IMAGES', configuration['skip_get_images'])
+            configuration['skip_install'] = ENV.fetch('SKIP_INSTALL', configuration['skip_install'])
+        end
 
-    config.vm.define :ccsdk do |ccsdk|
-      ccsdk.vm.hostname = 'ccsdk'
-      ccsdk.vm.network :private_network, ip: '192.168.50.17'
-      ccsdk.vm.provider "openstack" do |v|
-        v.server_name = 'ccsdk'
-      end
-      ccsdk.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/postinstall.sh'
-        s.args = ['ccsdk']
-        s.env = conf
-      end
-    end
+        if node[:name].include? "vfc"
+          nodeconfig.vm.provision 'docker'
+        end
 
-  when 'testing'
+        nodeconfig.vm.provision 'shell' do |s|
+          s.path = run_path
+          if node.has_key? :args
+            s.args = node[:args]
+          end
+          s.env  = configuration
+        end
 
-    config.vm.define :testing do |testing|
-      test_suite = ENV.fetch('TEST_SUITE', '*')
-      test_case = ENV.fetch('TEST_CASE', '*')
-
-      testing.vm.hostname = 'testing'
-      testing.vm.network :private_network, ip: '192.168.50.3'
-      testing.vm.synced_folder './tests', '/var/onap_tests/', create: true
-      testing.vm.provider "virtualbox" do |v|
-        v.customize ["modifyvm", :id, "--memory", 4 * 1024]
-      end
-      testing.vm.provider "libvirt" do |v|
-        v.memory = 4 * 1024
-        v.nested = true
-      end
-      testing.vm.provider "openstack" do |v|
-        v.server_name = 'testing'
-        v.flavor      = 'm1.small'
-      end
-      testing.vm.provision 'shell' do |s|
-        s.path = 'vagrant_utils/unit_testing.sh'
-        s.args = [test_suite, test_case]
-        s.env = conf
-      end
-    end
-
-  end
-end
+      end #nodeconfig
+    end #node
+end #config

@@ -20,12 +20,19 @@ Test case to use in testing mode.
 .PARAMETER y
 Skips warning prompt.
 
+.PARAMETER g
+Skips creation or retrieve image process.
+
+.PARAMETER i
+Skips installation service process.
+
 .LINK
 https://wiki.onap.org/display/DW/ONAP+on+Vagrant
 #>
 
 Param(
-    [ValidateSet("all_in_one","dns", "mr", "sdc", "aai", "mso", "robot", "vid", "sdnc", "portal", "dcae", "policy", "appc", "vfc", "multicloud", "ccsdk", "testing")]
+    [ValidateSet("dns", "mr", "sdc", "aai", "mso", "robot", "vid", "sdnc", "portal", "dcae", "policy", "appc", "vfc", "multicloud", "ccsdk", "vnfsdk", "vvp", "openstack", "msb", "oom", "dmaap", "integration", "testing")]
+
     [Parameter(Mandatory=$True,Position=0)]
     [ValidateNotNullOrEmpty()]
     [String]
@@ -44,7 +51,17 @@ Param(
     [Parameter(Mandatory=$False,HelpMessage="Skips warning prompt.")]
     [AllowNull()]
     [Switch]
-    $y = $false
+    $y = $True
+,
+    [Parameter(Mandatory=$False,HelpMessage="Skips creation or retrieve image process.")]
+    [AllowNull()]
+    [Switch]
+    $skip_get_images = $True
+,
+    [Parameter(Mandatory=$False,HelpMessage="Skips warning prompt.")]
+    [AllowNull()]
+    [Switch]
+    $skip_install = $True
 )
 
 if ( -Not "testing".Equals($Command) )
@@ -63,10 +80,12 @@ if ( -Not "testing".Equals($Command) )
             }
     }
 
+$env:SKIP_GET_IMAGES=$skip_get_images
+$env:SKIP_INSTALL=$skip_install
+
 switch ($Command)
     {
-        "all_in_one" { $env:DEPLOY_MODE="all-in-one" }
-        { @("dns", "mr", "sdc", "aai", "mso", "robot", "vid", "sdnc", "portal", "dcae", "policy", "appc") -contains $_ } { $env:DEPLOY_MODE="individual" }
+        { @("dns", "mr", "sdc", "aai", "mso", "robot", "vid", "sdnc", "portal", "dcae", "policy", "appc", "vfc", "multicloud", "ccsdk", "vnfsdk", "vvp", "openstack", "msb", "oom", "dmaap", "integration") -contains $_ } { $env:DEPLOY_MODE="individual" }
         "testing"
             {
                 $env:DEPLOY_MODE="testing"
@@ -91,7 +110,7 @@ switch ($Command)
              }
          default
              {
-                Write-Output $"Usage: $0 {all_in_one|dns|mr|sdc|aai|mso|robot|vid|sdnc|portal|dcae|policy|appc|testing}"
+                Write-Output $"Usage: $0 {dns|mr|sdc|aai|mso|robot|vid|sdnc|portal|dcae|policy|appc|vfc|multicloud|ccsdk|vnfsdk|vvp|dmaap|integration|testing}"
                 exit 1
              }
     }

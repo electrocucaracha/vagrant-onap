@@ -1,39 +1,15 @@
 #!/bin/bash
 
-set -o xtrace
-
 source /var/onap/functions
-
-robot_src_folder=$git_src_folder/testsuite
-robot_repos=("heatbridge" "properties" "python-testing-utils")
-
-# clone_robot_repos() - Function that clones Robot source repo.
-function clone_robot_repos {
-    clone_repo testsuite $robot_src_folder
-
-    for dirc in ${robot_repos[@]}; do
-        clone_repo testsuite/$dirc $robot_src_folder/$dirc
-    done
-}
-
-# compile_robot_repos() - Function that compile Robot source repo.
-function compile_robot_repos {
-    install_python_package tox
-    compile_src $robot_src_folder
-
-    for dirc in ${robot_repos[@]}; do
-        compile_src $robot_src_folder/$dirc
-    done
-}
 
 # _setup_ete_folder() - Create and copy ete folder structure
 function _setup_ete_folder {
     mkdir -p /opt/eteshare/config
 
-    cp $src_folder/integration_* /opt/eteshare/config
-    cp $src_folder/vm_config2robot.sh /opt/eteshare/config
-    cp $src_folder/ete.sh /opt
-    cp $src_folderdemo.sh /opt
+    cp ${src_folders[robot]}/integration_* /opt/eteshare/config
+    cp ${src_folders[robot]}/vm_config2robot.sh /opt/eteshare/config
+    cp ${src_folders[robot]}/ete.sh /opt
+    cp ${src_folders[robot]}/demo.sh /opt
 
     chmod +x /opt/ete.sh
     chmod +x /opt/demo.sh
@@ -41,24 +17,29 @@ function _setup_ete_folder {
 
 # get_robot_images() - Pull or build the Robot Docker images
 function get_robot_images {
-    pull_openecomp_image testsuite
+    pull_onap_image testsuite
 }
 
 # install_robot() - Run Robot services
 function install_robot {
     docker rm -f openecompete_container
-    docker run -d --name openecompete_container -v /opt/eteshare:/share -p 88:88 $nexus_docker_repo/openecomp/testsuite:$docker_version
+    run_docker_image -d --name openecompete_container -v /opt/eteshare:/share -p 88:88 $nexus_docker_repo/onap/testsuite:$docker_version
 }
 
 # init_robot() - Function that initialize Robot services
 function init_robot {
     if [[ "$clone_repo" == "True" ]]; then
-        clone_robot_repos
+        clone_repos "robot" "testsuite"
         _setup_ete_folder
         if [[ "$compile_repo" == "True" ]]; then
-            compile_robot_repos
+            compile_repos "robot"
         fi
     fi
-    get_robot_images
-    install_robot
+
+    if [[ "$skip_get_images" == "False" ]]; then
+        get_robot_images
+        if [[ "$skip_install" == "False" ]]; then
+            install_robot
+        fi
+    fi
 }

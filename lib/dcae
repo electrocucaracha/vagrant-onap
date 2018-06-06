@@ -1,16 +1,10 @@
 #!/bin/bash
 
-set -o xtrace
-
 source /var/onap/functions
-
-dcae_src_folder=$git_src_folder/dcae
-dcae_repos=("apod" "apod/analytics" "apod/buildtools" "apod/cdap" "collectors" "collectors/ves" "controller" "controller/analytics" "dcae-inventory"
-"demo" "demo/startup" "demo/startup/aaf" "demo/startup/controller" "demo/startup/message-router" "dmaapbc" "operation" "operation/utils" "pgaas" "utils" "utils/buildtools")
 
 # _create_config_file() - Creates a configuration yaml file for the controller
 function _create_config_file {
-    cat > $dcae_src_folder/controller/config.yaml << EOL
+    cat > ${src_folders[dcae]}/controller/config.yaml << EOL
 ZONE: $dcae_zone
 STATE: $dcae_state
 DCAE-VERSION: $artifacts_version
@@ -37,57 +31,19 @@ GIT-MR-REPO: http://gerrit.onap.org/r/dcae/demo/startup/message-router.git
 EOL
 }
 
-# _build_docker_image() - Function that clones, compiles and build a Docker image
-function _build_docker_image {
-    local src_folder=$1
-    local name=$2
-    install_docker
-
-    pushd $src_folder
-    # TODO(electrocucaracha) Workaround for dmmapbc images
-    sed -i '/LocalKey/d' Dockerfile
-    local docker_build="docker build -t $name -f ./Dockerfile ."
-    if [ $http_proxy ]; then
-        docker_build+=" --build-arg http_proxy=$http_proxy"
-    fi
-    if [ $https_proxy ]; then
-        docker_build+=" --build-arg https_proxy=$https_proxy"
-    fi
-    eval $docker_build
-    popd
-}
-
-# clone_all_dcae_repos() - Function that clones DCAE source repo.
-function clone_all_dcae_repos {
-    clone_repo dcae $dcae_src_folder
-    for dirc in ${dcae_repos[@]}; do
-        clone_repo dcae/$dirc $dcae_src_folder/$dirc
-    done
-}
-
-# compile_all_dcae_repos() - Function that compiles DCAE source repo.
-function compile_all_dcae_repos {
-    for dirc in ${dcae_repos[@]}; do
-        compile_src $dcae_src_folder/$dirc
-    done
-}
-
 # _build_dcae_images() Function that builds DCAE docker images from source code.
 function _build_dcae_images {
     if [[ "$compile_repo" != "True" ]]; then
-        compile_src $dcae_src_folder/dmaapbc
-        compile_src $dcae_src_folder/orch-dispatcher
-        compile_src $dcae_src_folder/demo
-        compile_src $dcae_src_folder/dcae-inventory
+        compile_repos "dcae"
     fi
-    _build_docker_image $dcae_src_folder/dmaapbc openecomp/dcae-dmaapbc
-    _build_docker_image $dcae_src_folder/orch-dispatcher dcae/orch-dispatcher
+    build_docker_image ${src_folders[dcae]}/dmaapbc openecomp/dcae-dmaapbc
+    build_docker_image ${src_folders[dcae]}/orch-dispatcher dcae/orch-dispatcher
 
-    pushd $dcae_src_folder/demo
+    pushd ${src_folders[dcae]}/demo
     bash dcae-demo-controller/src/main/docker-build/build.sh
     popd
 
-    build_docker_image $dcae_src_folder/dcae-inventory
+    build_docker_image ${src_folders[dcae]}/dcae-inventory
 }
 
 # get_dcae_images() - Function that retrieves or builds DCAE docker images.
@@ -95,39 +51,42 @@ function get_dcae_images {
     if [[ "$build_image" == "True" ]]; then
         _build_dcae_images
     else
-        pull_openecomp_image dcae-dmaapbc openecomp/dcae-dmaapbc
-        pull_openecomp_image dcae-controller
+        pull_openecomp_image dcae-dmaapbc ${docker_version:-latest} openecomp/dcae-dmaapbc
+        pull_openecomp_image dcae-controller ${docker_version:-latest}
     fi
 }
 
 # install_dcae() - Function that clones and installs the DCAE controller services from source code
 function install_dcae {
-    install_docker_compose
-    pushd $dcae_src_folder/demo/startup/controller
+    pushd ${src_folders[dcae]}/demo/startup/controller
     if [[ "$build_image" == "True" ]]; then
         dcae_image=`docker images | grep dcae-controller | awk '{print $1 ":" $2}'`
         sed -i "s|DOCKER-REGISTRY/openecomp/dcae-controller:DCAE-VERSION|$dcae_image|g" docker-compose.yml
         sed -i "s|MTU|$MTU|g" docker-compose.yml
-        /opt/docker/docker-compose up -d
+        run_docker_compose .
     else
         bash init.sh
         install_package make
         make up
     fi
     popd
-    # docker run -p 8080:8080 -d -v <some local directory>/config.yml:/opt/config.yml --name dcae-inventory <docker registry>/dcae-inventory:<version>
+    # run_docker_image -p 8080:8080 -d -v <some local directory>/config.yml:/opt/config.yml --name dcae-inventory <docker registry>/dcae-inventory:<version>
 }
 
 # init_dcae() - Function that initialize DCAE Controller services
 function init_dcae {
     if [[ "$clone_repo" == "True" ]]; then
-        clone_all_dcae_repos
+        clone_repos "dcae"
         if [[ "$compile_repo" == "True" ]]; then
-            compile_all_dcae_repos
+            compile_repos "dcae"
         fi
     fi
 
     _create_config_file
-    get_dcae_images
-    install_dcae
+    if [[ "$skip_get_images" == "False" ]]; then
+        get_dcae_images
+        if [[ "$skip_install" == "False" ]]; then
+            install_dcae
+        fi
+    fi
 }

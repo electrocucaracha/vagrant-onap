@@ -1,0 +1,474 @@
+#!/bin/bash
+
+source /var/onap/_commons
+source /var/onap/_onap_functions
+
+RANCHER_PORT=8880
+export RANCHER_URL=http://localhost:$RANCHER_PORT
+export RANCHER_ACCESS_KEY='access_key'
+export RANCHER_SECRET_KEY='secret_key'
+
+# _install_bind() - Install bind utils
+function _install_bind {
+    install_packages bind9 bind9utils
+}
+
+# install_java() - Install java binaries
+function install_java {
+    if is_package_installed openjdk-8-jdk; then
+        return
+    fi
+    source /etc/os-release || source /usr/lib/os-release
+    case ${ID,,} in
+        *suse)
+        ;;
+        ubuntu|debian)
+            install_package software-properties-common
+            add-apt-repository -y ppa:openjdk-r/ppa
+        ;;
+        rhel|centos|fedora)
+        ;;
+    esac
+    update_repos
+
+    # Remove Java 7
+    uninstall_packages default-jre openjdk-7-jdk openjdk-7-jre openjdk-7-jre-headless
+
+    install_package openjdk-8-jdk
+    # ca-certificates-java is not a dependency in the Oracle JDK/JRE so this must be explicitly installed.
+    /var/lib/dpkg/info/ca-certificates-java.postinst configure
+}
+
+# install_maven() - Install maven binaries
+function install_maven {
+    if is_package_installed maven3; then
+        return
+    fi
+    install_java
+    source /etc/os-release || source /usr/lib/os-release
+    case ${ID,,} in
+        *suse)
+        ;;
+        ubuntu|debian)
+            install_package software-properties-common
+            add-apt-repository -y ppa:andrei-pozolotin/maven3
+        ;;
+        rhel|centos|fedora)
+        ;;
+    esac
+    update_repos
+    install_package maven3
+
+    # Remove Java 7
+    uninstall_package openjdk-7-jdk
+
+    _configure_maven
+}
+
+# install_nodejs() - Download and install NodeJS
+function install_nodejs {
+    if is_package_installed nodejs; then
+        return
+    fi
+    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+    install_package nodejs
+
+    # Update NPM to latest version
+    npm install npm -g
+}
+
+# install_python() - Install Python 2.7 and other tools necessary for development.
+function install_python {
+    install_packages python2.7 python-dev
+}
+
+# _install_pip() - Install Python Package Manager
+function _install_pip {
+    install_python
+    if ! which pip; then
+        curl -sL https://bootstrap.pypa.io/get-pip.py | python
+    fi
+    pip install --upgrade pip
+}
+
+# install_python_package() - Install python modules
+function install_python_package {
+    local python_packages=$@
+
+    _install_pip
+    pip install $python_packages
+}
+
+# install_python_requirements() - Install a list of python modules defined in requirement.txt file
+function install_python_requirements {
+    local python_project_path=$1
+
+    _install_pip
+    pushd $python_project_path
+    pip install -r requirements.txt
+    popd
+}
+
+# _configure_docker_proxy() - Configure Docker proxy settings
+function _configure_docker_proxy {
+    local docker_conf_backup=/tmp/docker.backup
+    local docker_conf=${1:-/etc/default/docker}
+    local chameleonsocks_filename=chameleonsocks.sh
+
+    cp ${docker_conf} ${docker_conf_backup}
+    if [ $http_proxy ]; then
+        echo "export http_proxy=$http_proxy" >> $docker_conf
+    fi
+    if [ $https_proxy ]; then
+        echo "export https_proxy=$https_proxy" >> $docker_conf
+        #If you have a socks proxy, then use that to connect to the nexus repo
+        #via a redsocks container
+        if [ $socks_proxy ]; then
+            wget https://raw.githubusercontent.com/crops/chameleonsocks/master/$chameleonsocks_filename
+            chmod 755 $chameleonsocks_filename
+            socks=$(echo $socks_proxy | sed -e "s/^.*\///" | sed -e "s/:.*$//")
+            port=$(echo $socks_proxy | sed -e "s/^.*://")
+            ./$chameleonsocks_filename --uninstall
+            PROXY=$socks PORT=$port ./$chameleonsocks_filename --install
+            rm $chameleonsocks_filename
+            cp ${docker_conf_backup} ${docker_conf}
+        fi
+    fi
+    rm ${docker_conf_backup}
+}
+
+# _configure_docker_settings() - Configures Docker settings
+function _configure_docker_settings {
+    local docker_conf=/etc/default/docker
+    local max_concurrent_downloads=${1:-3}
+
+    _configure_docker_proxy $docker_conf
+
+    echo "DOCKER_OPTS=\"-H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock --max-concurrent-downloads $max_concurrent_downloads \"" >> $docker_conf
+    usermod -aG docker $USER
+
+    source /etc/os-release || source /usr/lib/os-release
+    case ${ID,,} in
+        *suse)
+        ;;
+        ubuntu|debian)
+            service docker restart
+            sleep 10
+        ;;
+        rhel|centos|fedora)
+        ;;
+    esac
+}
+
+# install_docker() - Download and install docker-engine
+function install_docker {
+    if $(docker version &>/dev/null); then
+        return
+    fi
+    source /etc/os-release || source /usr/lib/os-release
+    case ${ID,,} in
+        *suse)
+        ;;
+        ubuntu|debian)
+            install_packages software-properties-common linux-image-extra-$(uname -r) linux-image-extra-virtual apt-transport-https ca-certificates curl
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            add-apt-repository \
+            "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable"
+        ;;
+        rhel|centos|fedora)
+        ;;
+    esac
+    update_repos
+
+    install_package docker-ce
+    _configure_docker_settings
+}
+
+# install_docker_compose() - Download and install docker-engine 
+function install_docker_compose {
+    local docker_compose_version=${1:-1.21.0}
+    if [ ! -d /opt/docker ]; then
+        mkdir /opt/docker
+        curl -L https://github.com/docker/compose/releases/download/$docker_compose_version/docker-compose-`uname -s`-`uname -m` > /opt/docker/docker-compose
+        chmod +x /opt/docker/docker-compose
+    fi
+}
+
+# install_chefdk() - Install ChefDK package
+function install_chefdk {
+    local chefdk_version="2.4.17"
+
+    if is_package_installed chefdk; then
+        return
+    fi
+    pushd $(mktemp -d)
+    source /etc/os-release || source /usr/lib/os-release
+    case ${ID,,} in
+        *suse)
+        ;;
+        ubuntu|debian)
+        chefdk_pkg="chefdk_$chefdk_version-1_amd64.deb"
+        chefdk_url="https://packages.chef.io/files/stable/chefdk/$chefdk_version/ubuntu/$VERSION_ID/$chefdk_pkg"
+
+        wget $chefdk_url
+        dpkg -i $chefdk_pkg
+        apt-get install -f -y
+        ;;
+        rhel|centos|fedora)
+        rpm -Uvh "https://packages.chef.io/files/stable/chefdk/$chefdk_version/el/7/chefdk-$chefdk_version-1.el7.x86_64.rpm"
+        ;;
+    esac
+    popd
+}
+
+# _install_ODL() - Download and Install OpenDayLight SDN controller
+function _install_ODL {
+    if [ ! -d /opt/opendaylight/current ]; then
+        mkdir -p /opt/opendaylight/
+        wget "https://nexus.opendaylight.org/content/repositories/public/org/opendaylight/integration/distribution-karaf/"$odl_version"/distribution-karaf-"$odl_version".tar.gz" -P /opt/
+        tar xvf "/opt/distribution-karaf-"$odl_version".tar.gz" -C /tmp/
+        mv "/tmp/distribution-karaf-"$odl_version /opt/opendaylight/current
+        rm -rf "/opt/distribution-karaf-"$odl_version".tar.gz"
+    fi
+}
+
+# install_go() - Install GoLang package
+function install_go {
+    if $(go version &>/dev/null); then
+        return
+    fi
+    local version=1.10.2
+    local os=linux
+    local arch=amd64
+    local tarball=go$version.$os-$arch.tar.gz
+
+    wget https://dl.google.com/go/$tarball
+    tar -C /usr/local -xzf $tarball
+    rm $tarball
+
+    export PATH=$PATH:/usr/local/go/bin
+    sed -i "s|^PATH=.*|PATH=\"$PATH\"|" /etc/environment
+}
+
+# install_dep() - Install dep GoLand tool
+function install_dep {
+    install_go
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+}
+
+# install_hadoop() - Function that installs Hadoop
+function install_hadoop {
+    local release=titan
+    local version=1.0.0
+    local filename=$release-$version-hadoop1
+    local dest_folder=/opt/hadoop/current
+
+    if [ ! -d $dest_folder ]; then
+        curl http://s3.thinkaurelius.com/downloads/$release/$filename.zip -o /tmp/${filename}.zip
+        install_package unzip
+        mkdir -p $dest_folder
+        unzip /tmp/${filename}.zip -d $dest_folder
+    fi
+
+    pushd $dest_folder/${filename}
+    # Change commitlog_directory and data_file_directories values (https://stackoverflow.com/a/26856246/1707651)
+    sed -i "s|db/cassandra/data|/tmp/data|g" conf/cassandra/cassandra.yaml
+    sed -i "s|db/cassandra/commitlog|/tmp/commitlog|g" conf/cassandra/cassandra.yaml
+
+    install_java
+    ./bin/titan.sh start
+    popd
+}
+
+# install_haproxy() - Function that install HAProxy
+function install_haproxy {
+    if is_package_installed haproxy; then
+        return
+    fi
+    source /etc/os-release || source /usr/lib/os-release
+    case ${ID,,} in
+        *suse)
+        ;;
+        ubuntu|debian)
+            install_package software-properties-common
+            add-apt-repository -y ppa:vbernat/haproxy-1.7
+            update_repos
+            install_package haproxy
+            cp /var/onap/files/haproxy.cfg /etc/haproxy/
+            cp /var/onap/files/aai.pem /etc/ssl/private/
+            chmod 640 /etc/ssl/private/aai.pem
+            chown root:ssl-cert /etc/ssl/private/aai.pem
+            mkdir -p /usr/local/etc/haproxy
+            #echo "127.0.0.1 localhost aai-traversal.api.simpledemo.openecomp.org aai-resources.api.simpledemo.openecomp.org" >> /etc/hosts
+
+            service haproxy restart
+        ;;
+        rhel|centos|fedora)
+        ;;
+    esac
+}
+# _install_rancher() - Function that installs Rancher CLI and container
+function _install_rancher {
+    local rancher_version=v0.6.5
+    local rancher_server_version=v1.6.10
+    local rancher_server=rancher/server:$rancher_server_version
+
+    if [ ! -d /opt/rancher/current ]; then
+        mkdir -p /opt/rancher/current
+        wget https://github.com/rancher/cli/releases/download/$rancher_version/rancher-linux-amd64-$rancher_version.tar.gz
+        tar -xzf rancher-linux-amd64-$rancher_version.tar.gz -C /tmp
+        mv /tmp/rancher-$rancher_version/rancher /opt/rancher/current/
+    fi
+
+    if ! $(docker version &>/dev/null); then
+        curl https://releases.rancher.com/install-docker/1.12.sh | sh
+        _configure_docker_settings 15
+    fi
+    pull_docker_image $rancher_server
+    run_docker_image -d --restart=unless-stopped -p $RANCHER_PORT:8080 $rancher_server
+    while true; do
+        if curl --fail -X GET $RANCHER_URL; then
+            break
+        fi
+        echo "waiting for racher"
+        sleep $oom_delay
+    done
+}
+
+# install_kubernetes() - Function that deploys kubernetes
+function install_kubernetes {
+    local installer_k8s_type=${1:-rancher}
+    _install_${installer_k8s_type}_k8s
+}
+
+# _install_kubespray_k8s() - Function that installs Kubernetes using kubespray tool
+function _install_kubespray_k8s {
+    local src_folder=/opt/kubespray
+
+    clone_repo kubernetes-incubator/kubespray $src_folder https://github.com/
+    install_docker
+    pushd $src_folder
+    install_python_requirements .
+    rm -rf inventory/*
+    mkdir -p inventory/group_vars
+    cp /var/onap/files/aio_inventory.cfg ./inventory/inventory.cfg
+    cp /var/onap/files/k8s-cluster.yml ./inventory/group_vars/
+
+    swapoff -a
+    if [ $http_proxy ]; then
+        sed -i "s|#http_proxy: \"\"|http_proxy: \"$http_proxy\"|g" ./inventory/group_vars/k8s-cluster.yml
+    fi
+    if [ $https_proxy ]; then
+        sed -i "s|#https_proxy: \"\"|https_proxy: \"$https_proxy\"|g" ./inventory/group_vars/k8s-cluster.yml
+    fi
+    if [ $no_proxy ]; then
+        sed -i "s|#no_proxy: \"\"|no_proxy: \"$no_proxy\"|g" ./inventory/group_vars/k8s-cluster.yml
+    fi
+
+    echo "  type: NodePort" >> roles/kubernetes-apps/ansible/templates/dashboard.yml.j2
+    ansible-playbook -vvv -i inventory/inventory.cfg cluster.yml -b | tee setup-kubernetes.log
+    popd
+    swapon -a
+    _configure_docker_proxy
+}
+
+# _pull_rancher_images() - Function that retrieves Rancher images required for k8s
+function _pull_rancher_images {
+    for image in "net:v0.13.5" "k8s:v1.8.5-rancher3" \
+"lb-service-rancher:v0.7.17" "network-manager:v0.7.18" "metadata:v0.9.5" \
+"kubectld:v0.8.5" "kubernetes-agent:v0.6.6" "dns:v0.15.3" \
+"kubernetes-auth:v0.0.8" "healthcheck:v0.3.3" "etcd:v2.3.7-13" \
+"etc-host-updater:v0.0.3" "net:holder"; do
+        pull_docker_image rancher/$image &
+    done
+}
+
+# _pull_k8s_images() - Function that retrieves Google k8s images
+function _pull_k8s_images {
+    for image in "kubernetes-dashboard-amd64:v1.7.1" \
+"k8s-dns-sidecar-amd64:1.14.5" "k8s-dns-kube-dns-amd64:1.14.5" \
+"k8s-dns-dnsmasq-nanny-amd64:1.14.5" "heapster-influxdb-amd64:v1.3.3" \
+"heapster-grafana-amd64:v4.4.3" "heapster-amd64:v1.4.0" "pause-amd64:3.0"; do
+        pull_docker_image gcr.io/google_containers/$image &
+    done
+}
+
+# _install_rancher_k8s() - Function that installs Kubernetes thru Rancher Container
+function _install_rancher_k8s {
+    local rancher_agent_version=v1.2.7
+    local rancher_agent=rancher/agent:$rancher_agent_version
+
+    _install_rancher
+
+    _pull_rancher_images
+    _pull_k8s_images
+    pull_docker_image $rancher_agent
+    wait_docker_pull
+
+    pushd /opt/rancher/current/
+    export RANCHER_ENVIRONMENT=`./rancher env create -t kubernetes onap_on_kubernetes`
+    popd
+
+    install_python_package rancher-agent-registration
+    export no_proxy=$no_proxy,$IP_ADDRESS
+    rancher-agent-registration --host-ip $IP_ADDRESS --url http://$IP_ADDRESS:$RANCHER_PORT --environment $RANCHER_ENVIRONMENT --key $RANCHER_ACCESS_KEY --secret $RANCHER_SECRET_KEY
+}
+
+# _install_kubectl() - Function that installs kubectl as client for kubernetes
+function _install_kubectl {
+    local version=${1:-$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)}
+
+    if ! $(kubectl version &>/dev/null); then
+        rm -rf ~/.kube
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/$version/bin/linux/amd64/kubectl
+        chmod +x ./kubectl
+        mv ./kubectl /usr/local/bin/kubectl
+        mkdir ~/.kube
+    fi
+}
+
+# install_helm() - Function that install Kubernetes Package Manager
+function install_helm {
+    local helm_version=v2.8.2
+    local helm_tarball=helm-${helm_version}-linux-amd64.tar.gz
+
+    if ! $(helm version &>/dev/null); then
+        wget http://storage.googleapis.com/kubernetes-helm/$helm_tarball
+        tar -zxvf $helm_tarball -C /tmp
+        rm $helm_tarball
+        mv /tmp/linux-amd64/helm /usr/local/bin/helm
+        _install_kubectl
+        kubectl create serviceaccount --namespace kube-system tiller
+        kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+        kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+        helm init --service-account tiller
+        helm repo update
+    fi
+}
+
+# _install_openstack() - Function that installs OpenStack services thru OpenStack-Helm project
+function _install_openstack {
+    local src_folder=/opt/openstack-helm
+
+    clone_repo openstack/openstack-helm $src_folder https://github.com/
+    install_python_package python-openstackclient python-heatclient
+    mkdir -p /etc/openstack
+    chown -R $(id -un): /etc/openstack
+    tee /etc/openstack/clouds.yaml << EOF
+clouds:
+  openstack_helm:
+    region_name: RegionOne
+    identity_api_version: 3
+    auth:
+      username: 'admin'
+      password: 'password'
+      project_name: 'admin'
+      project_domain_name: 'default'
+      user_domain_name: 'default'
+      auth_url: 'http://keystone.openstack.svc.cluster.local/v3'
+EOF
+    pushd $src_folder
+    make all
+    popd
+}

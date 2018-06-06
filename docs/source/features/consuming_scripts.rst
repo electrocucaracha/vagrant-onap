@@ -22,10 +22,10 @@ them into the */var/onap/* folder.
 
 .. code-block:: console
 
-    $ sudo su -
-    # apt-get install git -y
-    # git clone https://git.onap.org/integration
-    # mv integration/bootstrap/vagrant-onap/lib/ /var/onap/
+    $ sudo apt-get install git -y
+    $ git clone https://git.onap.org/integration/devtool
+    $ cd /var/
+    $ ln -s ~/devtool/lib/ ./onap
 
 .. end
 
@@ -37,7 +37,7 @@ and Available Inventory (AAI) service will be required to load the
 .. note::
 
     The **git_src_folder** environment variable specifies the
-    source code destination folder, it's default value is */opt/*
+    source code destination folder, it's default value is */opt/onap/*
     but it can be changed only after is loaded the provisioning
     scripts.
 
@@ -79,13 +79,10 @@ to provision a AAI Developement environment.
 
 .. code-block:: console
 
-    # export nexus_docker_repo="nexus3.onap.org:10001"
-    # export nexus_username="docker"
-    # export nexus_password="docker"
     # init_aai
 
 .. end
 
-As result, the source code is pulled into */opt/aai/* folder and the
+As result, the source code is pulled into */opt/onap/aai/* folder and the
 AAI services are up and running with the proper connection to the
 Titan Distributed Graph Database.

@@ -1,9 +1,8 @@
-# ONAP on Vagrant
+# Devtool for ONAP
 
-[![Build Status](https://api.travis-ci.org/electrocucaracha/vagrant-onap.svg?branch=master)](https://api.travis-ci.org/electrocucaracha/vagrant-onap)
-
-This vagrant project pretends to collect information about a way to deploy
-and build [ONAP project](https://www.onap.org/) into a development environment.
+This project pretends to collect information about a way to developing/building
+services for [ONAP project](https://www.onap.org/) providing an automated
+development environment.
 
 ### Problem Being Solved
 
@@ -26,45 +25,57 @@ questions faced by new developers
 
 ## Execution:
 
-#### deploying a single application
+#### Deploying a single application
 
 * Windows
 
-    PS C:\> cd integration\bootstrap\vagrant-onap
-    PS C:\integration\bootstrap\vagrant-onap> Set-ExecutionPolicy Bypass -Scope CurrentUser
-    PS C:\integration\bootstrap\vagrant-onap> .\tools\Run.ps1 <app_name>
+    PS C:\> cd devtool
+    PS C:\devtool> Set-ExecutionPolicy Bypass -Scope CurrentUser
+    PS C:\devtool> .\tools\Run.ps1 <app_name>
 
 * Linux or Mac OS
 
-    $ cd integration/bootstrap/vagrant-onap
+    $ cd devtool
     $ ./tools/run.sh <app_name>
 
 current options include:
 
-| app_name   | description                         |
-|:----------:|-------------------------------------|
-| aai        | Active and Available Inventory      |
-| appc       | Application Controller              |
-| dcae       | Data Collection Analytics & Events  |
-| mr         | Message Router                      |
-| mso        | Master Service Orchestrator         |
-| policy     | Policy                              |
-| portal     | Portal                              |
-| robot      | Robot                               |
-| sdc        | Service Design & Creation           |
-| sdnc       | Software Defined Network Controller |
-| vid        | Virtual Infrastructure Development  |
-| vfc        | Virtual Function Controller         |
-| multicloud | Multi Cloud                         |
-| ccsdk      | Common Controller SDK               |
-| all_in_one | All ONAP services in a VM           |
-| testing    | Unit Test VM                        |
+| app_name    | description                         |
+|:-----------:|-------------------------------------|
+| aai         | Active and Available Inventory      |
+| appc        | Application Controller              |
+| ccsdk       | Common Controller SDK               |
+| dcae        | Data Collection Analytics & Events  |
+| dmaap       | Data Movement as a Platform         |
+| integration | Integration                         |
+| mr          | Message Router                      |
+| mso         | Master Service Orchestrator         |
+| msb         | Microservices Bus Project           |
+| multicloud  | Multi Cloud                         |
+| oom         | ONAP Operations Manager             |
+| policy      | Policy                              |
+| portal      | Portal                              |
+| robot       | Robot                               |
+| sdc         | Service Design & Creation           |
+| sdnc        | Software Defined Network Controller |
+| vfc         | Virtual Function Controller         |
+| vid         | Virtual Infrastructure Development  |
+| vnfsdk      | VNF SDK                             |
+| vvp         | VNF Validation Program              |
+
+| app_name   | description                              |
+|:----------:|------------------------------------------|
+| testing    | Unit Test VM                             |
+
+| app_name   | description          |
+|:----------:|----------------------|
+| openstack  | OpenStack Deployment |
 
 #### Generating documentation
 
 The documentation of this project was written in reStructuredText
 format which is located under the [docs folder](../blob/master/doc/source/index.rst).
-It's possible to format this documents to HTML using Sphinix python
+It's possible to format these documents to HTML using Sphinix python
 tool.
 
     $ tox -e docs

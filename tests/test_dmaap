@@ -1,0 +1,62 @@
+#!/bin/bash
+
+source /var/onap_tests/_test_base
+source /var/onap/dmaap
+
+covered_functions=(
+"clone_dmaap_repos" "compile_dmaap_repos" "get_dmaap_images" "install_dmaap"
+)
+
+# test_clone_dmaap_repos() - Verify that DMaaP repositories are retrieved properly
+function test_clone_dmaap_repos {
+    clone_repos "dmaap"
+
+    asserts_file_exist ${src_folders[dmaap]}/buscontroller/pom.xml
+    asserts_file_exist ${src_folders[dmaap]}/datarouter/pom.xml
+    asserts_file_exist ${src_folders[dmaap]}/dbcapi/pom.xml
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/License.txt
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/dmaapclient/pom.xml
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/messageservice/pom.xml
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/mirroragent/pom.xml
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/msgrtr/pom.xml
+}
+
+# test_compile_dmaap_repos() - Verify the compilation of DMaaP repositories
+function test_compile_dmaap_repos {
+    clone_repos "dmaap"
+    compile_repos "dmaap"
+
+    asserts_file_exist ${src_folders[dmaap]}/buscontroller/target/buscontroller.jar
+    for project in node prov; do
+        asserts_file_exist ${src_folders[dmaap]}/datarouter/datarouter-$project/target/datarouter-$project.jar
+    done
+    asserts_file_exist ${src_folders[dmaap]}/dbcapi/target/dbcapi.jar
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/dmaapclient/target/dmaapClient-*-SNAPSHOT.jar
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/messageservice/target/dmaapMR1-*-SNAPSHOT.jar
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/mirroragent/target/dmaapMMAgent-*-SNAPSHOT.jar
+    asserts_file_exist ${src_folders[dmaap]}/messagerouter/msgrtr/target/DMaaP.jar
+}
+
+# test_get_dmaap_images() - Verify that DMaaP images are retrieved or built properly
+function test_get_dmaap_images {
+    clone_repos "dmaap"
+    get_dmaap_images
+
+    for image in dmaap-mr datarouter-prov datarouter-node buscontroller; do
+        asserts_image onap/dmaap/$image
+    done
+}
+
+# test_install_dmaap() - Verify the execution of DMaaP services
+function test_install_dmaap {
+    clone_repos "dmaap"
+    install_dmaap
+
+    asserts_image_running
+}
+
+if [ "$1" != '*' ]; then
+    unset covered_functions
+    covered_functions=$1
+fi
+main "${covered_functions[@]}"

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source /var/onap/functions
+
+# install_integration - Function that installs dependecies for Integration projects
+function install_integration {
+    echo "Install CSIT dependencies.."
+    install_packages python-virtualenv unzip sshuttle netcat libffi-dev libssl-dev
+    install_python_package tox robotframework docker-compose
+    install_python_package --upgrade requests robotframework-requests
+    install_docker
+
+    echo "Running All CSIT tests..."
+    pushd ${src_folders[integration]}/test/csit
+    ./run-all-tests.sh
+    popd
+}
+
+# init_integration() - Init Integration projects
+function init_integration {
+    if [[ "$clone_repo" == "True" ]]; then
+        clone_repos "integration"
+    fi
+
+    if [[ "$skip_install" == "False" ]]; then
+        install_integration
+    fi
+}

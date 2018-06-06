@@ -6,13 +6,16 @@ Usage: run.sh Command [-y] [-?]
 Optional arguments:
     -y
         Skips warning prompt.
+    -g
+        Skips creation or retrieve image process.
+    -i
+        Skips installation service process.
     -s <suite>
         Test suite to use in testing mode.
     -c <case>
         Test case to use in testing mode.
 Commands:
-    all_in_one  Deploy in all-in-one mode.
-    dns|mr|sdc|aai|mso|robot|vid|sdnc|portal|dcae|policy|appc|vfc|multicloud|ccsdk  Deploy chosen service.
+    dns|mr|sdc|aai|mso|robot|vid|sdnc|portal|dcae|policy|appc|vfc|vnfsdk|multicloud|ccsdk|vvp|openstack|msb|oom|dmaap|integration  Deploy chosen service.
     testing  Deploy in testing mode.
 EOF
 }
@@ -23,10 +26,16 @@ test_case="*"
 
 COMMAND=$1
 
-while getopts "ys:c:" OPTION "${@:2}"; do
+while getopts "ygis:c:" OPTION "${@:2}"; do
     case "$OPTION" in
     y)
         run=true
+        ;;
+    g)
+        export SKIP_GET_IMAGES="True"
+        ;;
+    i)
+        export SKIP_INSTALL="True"
         ;;
     s)
         if [ "$COMMAND" != "testing" ] ; then
@@ -52,10 +61,7 @@ while getopts "ys:c:" OPTION "${@:2}"; do
 done
 
 case $COMMAND in
-    "all_in_one" )
-        export DEPLOY_MODE='all-in-one'
-        ;;
-    "dns" | "mr" | "sdc" | "aai" | "mso" | "robot" | "vid" | "sdnc" | "portal" | "dcae" | "policy" | "appc" | "vfc" | "multicloud" | "ccsdk" )
+    "dns" | "mr" | "sdc" | "aai" | "mso" | "robot" | "vid" | "sdnc" | "portal" | "dcae" | "policy" | "appc" | "vfc" | "vnfsdk"| "multicloud" | "ccsdk" | "vvp" | "openstack" | "msb" | "oom" | "dmaap" | "integration" )
         export DEPLOY_MODE='individual'
         ;;
     "testing" )

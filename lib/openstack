@@ -1,0 +1,118 @@
+#!/bin/bash
+
+source /var/onap/functions
+
+kolla_config=/etc/kolla
+kolla_build=$kolla_config/kolla-build.conf
+kolla_passwords=$kolla_config/passwords.yml
+kolla_globals=$kolla_config/globals.yml
+kolla_inventory=/var/onap/files/all-in-one
+
+# install_dependencies() - Function that installs Kolla-Ansible requirements
+function install_dependencies {
+    install_docker
+
+    mkdir -p /etc/systemd/system/docker.service.d
+    tee /etc/systemd/system/docker.service.d/kolla.conf <<-'EOF'
+[Service]
+MountFlags=shared
+EOF
+    systemctl daemon-reload
+    systemctl restart docker
+
+    install_python_package ansible docker kolla-ansible python-openstackclient
+}
+
+# configure_deploy() - Function that modifies configuration files
+function configure_deploy {
+    local network_id=$1
+    local enable_opendaylight=${2-False}
+    local openstack_services="main = ceilometer,cinder,glance,heat,horizon,isci,keystone,neutron,nova-,swift"
+    nic=$(ip route get $network_id | awk '{ print $4; exit }')
+    ip_address=$(ip route get $network_id | awk '{ print $6; exit }')
+    internal_vip_address=$(get_next_ip $ip_address)
+
+    if [[ `env | grep -i "proxy"` ]]; then
+        add_no_proxy_value $internal_vip_address
+    fi
+
+    mkdir -p $kolla_config
+    cp /var/onap/files/globals.yml $kolla_globals
+    cp /var/onap/files/passwords.yml $kolla_passwords
+    cp /var/onap/files/kolla-build.conf $kolla_build
+    kolla-genpwd
+    echo "network_interface: \"$nic\"" >> $kolla_globals
+    echo "kolla_internal_vip_address: \"$internal_vip_address\"" >> $kolla_globals
+    echo "api_interface: \"{{ network_interface }}\"" >> $kolla_globals
+    if [[ $enable_opendaylight == True ]]; then
+        echo "enable_opendaylight: \"yes\"" >> $kolla_globals
+        openstack_services+=",opendaylight"
+    fi
+    echo $openstack_services >> $kolla_build
+
+    echo "$ip_address $(hostname)" >> /etc/hosts
+}
+
+# get_openstack_images() - Function that retrieves or builds docker images
+function get_openstack_images {
+    if [[ "$build_image" == "True" ]]; then
+        install_python_package kolla
+        kolla-build --config-file $kolla_build
+    else
+        kolla-ansible pull -i $kolla_inventory
+    fi
+}
+
+# install_openstack() - Function that installs OpenStack services
+function install_openstack {
+    local installer_os_type=${1:-kolla_ansible}
+    _install_${installer_os_type}
+}
+
+# _install_kolla_ansible() - Function that installs OpenStack services thru Kolla-Ansible project
+function _install_kolla_ansible {
+    install_dependencies
+    configure_deploy ${1:-"192.168.53.0"} "True"
+    if [[ "$skip_get_images" == "False" ]]; then
+        get_openstack_images
+    fi
+    if [[ "$skip_install" == "False" ]]; then
+        kolla-ansible deploy -i $kolla_inventory
+        kolla-ansible post-deploy
+        echo "source /etc/kolla/admin-openrc.sh" >> ${HOME}/.bashrc
+    fi
+}
+
+# _install_openstack_helm() - Function that installs OpenStack services thru OpenStack-Helm project
+function _install_openstack_helm {
+    local src_folder=/opt/openstack-helm
+
+    install_kubernetes kubespray
+    install_helm
+    clone_repo openstack/openstack-helm $src_folder https://github.com/
+    install_python_package python-openstackclient python-heatclient
+    mkdir -p /etc/openstack
+    chown -R $(id -un): /etc/openstack
+    tee /etc/openstack/clouds.yaml << EOF
+clouds:
+  openstack_helm:
+    region_name: RegionOne
+    identity_api_version: 3
+    auth:
+      username: 'admin'
+      password: 'password'
+      project_name: 'admin'
+      project_domain_name: 'default'
+      user_domain_name: 'default'
+      auth_url: 'http://keystone.openstack.svc.cluster.local/v3'
+EOF
+    pushd $src_folder
+    make all
+    popd
+}
+
+# init_openstack() - Function that provisions an OpenStack deployment
+function init_openstack {
+    #install_openstack openstack_helm
+    install_openstack
+}

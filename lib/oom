@@ -1,0 +1,136 @@
+#!/bin/bash
+
+source /var/onap/functions
+
+oom_delay=30
+k8s_deployment_tool="kubespray"
+
+# _pull_images_from_yaml() - Function that parses a yaml file and pull their images
+function _pull_images_from_yaml_file {
+    if [[ "$clone_repo" != "True" ]]; then
+        clone_repos "oom"
+    fi
+
+    docker_openecomp_login
+    for values_file in `find ${src_folders[oom]}/kubernetes -name values.yaml -type f`; do
+        _parse_yaml_file $values_file
+    done
+    docker logout
+    wait_docker_pull
+}
+
+# _parse_yaml_file() - Fuction that parses the OOM Charts files
+function _parse_yaml_file {
+    local values_file=$1
+    local prefix=$2
+    local s='[[:space:]]*'
+    local w='[a-zA-Z0-9_]*'
+    fs=`echo @|tr @ '\034'`
+
+    for line in $(sed -ne "s|^\($s\):|\1|" \
+-e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+-e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $values_file |
+awk -F$fs '{
+indent = length($1)/2;
+vname[indent] = $2;
+for (i in vname) {
+    if (i > indent) {
+        delete vname[i]}
+    }
+    if (length($3) > 0) {
+        vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])(".")}
+        printf("%s%s%s=%s\n", "'$prefix'",vn, $2, $3);
+    }
+}' | grep image); do
+        echo $line
+        if echo $line | grep -q Version ; then
+            pull_docker_image "$image_name:$(echo $line | awk -F "=" '{print $2}')" &
+        else
+            image_name=`echo ${line#*=}`
+            if [[ ${image_name#*${nexus_docker_repo:-nexus3.onap.org:10001}} == *:* ]]; then
+                pull_docker_image $image_name &
+            else
+                pull_docker_image $image_name:latest
+            fi
+        fi
+    done
+}
+
+# _pull_images_from_csv_file() - Function that parses a csv file to pull their images
+function _pull_images_from_csv_file {
+    local filename=docker-manifest.csv
+
+    wget ${git_url}/integration/plain/version-manifest/src/main/resources/$filename
+
+    install_docker
+    for line in $(tail -n +2 $filename); do
+        image=${line%,*}
+        pull_$(echo $image | cut -d / -f 1)_image ${image#*/} ${line#*,} &
+    done
+    rm $filename
+    wait_docker_pull
+}
+
+# get_oom_images() - Function that retrieves ONAP images from official hub
+function get_oom_images {
+    local single_source_of_truth=${1:-"csv"}
+
+    if [[ "$build_image" == "True" ]]; then
+        for project in aai appc dcae dmaap mr msb mso multicloud policy portal robot sdc sdnc vfc vid; do
+            source /var/onap/$project
+            get_${project}_images
+        done
+        install_go
+        go get github.com/electrocucaracha/onap_builder
+    else
+        _pull_images_from_${single_source_of_truth}_file
+    fi
+}
+
+# install_oom() - Function that clones OOM and deploys ONAP
+function install_oom {
+    install_kubernetes $k8s_deployment_tool
+    if [[ "$deployment_tool" == "rancher" ]]; then
+        pushd ~/.kube
+        install_python_package requests
+        python /var/onap/files/kubectl_config_generator.py
+        popd
+    fi
+    until kubectl cluster-info; do
+        echo "waiting for kubernetes host"
+        sleep $oom_delay
+    done
+    install_helm
+
+    if [[ "$clone_repo" != "True" ]]; then
+        clone_repos "oom"
+    fi
+    pushd ${src_folders[oom]}/kubernetes
+    make repo
+    make all
+    helm install local/onap -n beijing -f /var/onap/files/dev.yaml
+    popd
+}
+
+# init_oom() - Function that deploys ONAP using OOM
+function init_oom {
+    local k8s_info_file=/var/log/k8s_info.log
+    mount_external_partition sda /var/lib/docker/
+
+    if [[ "$clone_repo" == "True" ]]; then
+        clone_repos "oom"
+    fi
+    if [[ "$skip_get_images" == "False" ]]; then
+        get_oom_images
+    fi
+    if [[ "$skip_install" == "False" ]]; then
+        install_oom
+        if [[ "$k8s_deployment_tool" == "kubespray" ]]; then
+            printf "Kubernetes Info\n===============\n" > $k8s_info_file
+            echo "Dashboard URL: https://$IP_ADDRESS:$(kubectl get service -n kube-system |grep kubernetes-dashboard | awk '{print $5}' |awk -F "[:/]" '{print $2}')" >> $k8s_info_file
+            echo "Admin user: $(cat /etc/kubernetes/users/known_users.csv |awk -F ',' '{print $2}')" >> $k8s_info_file
+            echo "Admin password: $(cat /etc/kubernetes/users/known_users.csv |awk -F ',' '{print $1}')" >> $k8s_info_file
+            cat $k8s_info_file
+        fi
+    fi
+}
